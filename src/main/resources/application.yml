@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${AI408_DB_URL:jdbc:h2:mem:ai408;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE}
+    username: ${AI408_DB_USERNAME:sa}
+    password: ${AI408_DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+logging:
+  level:
+    org.springframework.security: warn
+    org.hibernate.SQL: warn
+
+ai408:
+  files:
+    storage-dir: ${AI408_STORAGE_DIR:./storage}
+    template-dir: ${AI408_TEMPLATE_DIR:./storage/templates}
+  auth:
+    fixed-code: ${AI408_FIXED_CODE:123456}
+    code-expire-seconds: 300
+  jwt:
+    secret: ${AI408_JWT_SECRET:ai408-local-secret-ai408-local-secret-ai408}
+    access-token-minutes: 120
+    refresh-token-days: 7
+  ai:
+    base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${DASHSCOPE_API_KEY:}
+    model: ${AI408_QWEN_MODEL:qwen-plus}
+    system-prompt: 你是AI408刷题系统里的AI讲解老师。请用中文、结构清晰、简洁直接的方式解释题目，优先给出关键思路、标准答案、易错点和一句话总结。
+    mock-enabled: ${AI408_AI_MOCK:true}
+  admin:
+    seed-mobile: ${AI408_ADMIN_MOBILE:13800138000}
+    seed-nickname: ${AI408_ADMIN_NICKNAME:AI408管理员}
+  cors:
+    allowed-origins:
+      - ${AI408_FRONTEND_ORIGIN:http://127.0.0.1:5173}
+      - ${AI408_FRONTEND_ORIGIN2:http://localhost:5173}
