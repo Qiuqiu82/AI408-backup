@@ -56,6 +56,18 @@ public class FileStorageService {
         }
     }
 
+    public String storeBytes(byte[] bytes, String folder, String fileName) {
+        try {
+            Path dir = storageDir.resolve(folder).normalize();
+            Files.createDirectories(dir);
+            Path target = dir.resolve(fileName).normalize();
+            Files.write(target, bytes);
+            return "/files/" + storageDir.relativize(target).toString().replace("\\", "/");
+        } catch (IOException e) {
+            throw new IllegalStateException("store file failed", e);
+        }
+    }
+
     public String storePath(Path file) {
         return "/files/" + storageDir.relativize(file).toString().replace("\\", "/");
     }

@@ -3,8 +3,9 @@ package org.example.ai408.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ai408_import_job")
@@ -31,7 +32,7 @@ public class ImportJobEntity extends BaseEntity {
     @Column(name = "error_file_url", length = 255)
     private String errorFileUrl;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String message;
 
     public String getJobId() {

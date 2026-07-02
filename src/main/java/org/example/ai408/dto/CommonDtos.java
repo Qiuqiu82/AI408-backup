@@ -75,6 +75,7 @@ public final class CommonDtos {
     public record PracticeSessionDTO(
             String sessionId,
             String mode,
+            String status,
             String subjectCode,
             int totalCount,
             String currentQuestionId,
@@ -147,6 +148,16 @@ public final class CommonDtos {
     }
 
     public record AIStreamEventDTO(String type, String content) {
+    }
+
+    public static class StateRow {
+        public String questionId;
+        public String title;
+        public String subjectName;
+        public String tag;
+        public String time;
+        public boolean inWrongBook;
+        public int favoriteImportance;
     }
 
     public static class QuestionPageRequest {
@@ -578,6 +589,44 @@ public final class CommonDtos {
 
             public void setUserAnswer(List<String> userAnswer) {
                 this.userAnswer = userAnswer;
+            }
+        }
+    }
+
+    public static class UserUpdateRequest {
+        @Valid
+        @NotNull
+        @JsonProperty("data")
+        private Payload data;
+
+        public Payload getData() {
+            return data;
+        }
+
+        public void setData(Payload data) {
+            this.data = data;
+        }
+
+        public static class Payload {
+            @Size(max = 50)
+            private String nickname;
+            @Size(max = 255)
+            private String avatarUrl;
+
+            public String getNickname() {
+                return nickname;
+            }
+
+            public void setNickname(String nickname) {
+                this.nickname = nickname;
+            }
+
+            public String getAvatarUrl() {
+                return avatarUrl;
+            }
+
+            public void setAvatarUrl(String avatarUrl) {
+                this.avatarUrl = avatarUrl;
             }
         }
     }

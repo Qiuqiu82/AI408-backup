@@ -41,7 +41,7 @@ public final class Support {
                 firstTag(question.getTagsJson(), question.getQuestionType()),
                 question.getNewType(),
                 state == null ? "new" : state.getQuestionStatus(),
-                state == null ? 0 : state.getFavoriteImportance(),
+                state == null || state.getFavoriteImportance() == null ? 0 : state.getFavoriteImportance(),
                 state != null && Boolean.TRUE.equals(state.getInWrongBook())
         );
     }
@@ -121,5 +121,12 @@ public final class Support {
         if (!condition) {
             throw new BusinessException(errorCode);
         }
+    }
+
+    public static int pageCount(long recordCount, int pageSize) {
+        if (pageSize <= 0) {
+            return 0;
+        }
+        return (int) Math.ceil(recordCount * 1.0 / pageSize);
     }
 }

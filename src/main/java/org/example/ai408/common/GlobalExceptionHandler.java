@@ -1,6 +1,8 @@
 package org.example.ai408.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException exception) {
@@ -32,7 +35,8 @@ public class GlobalExceptionHandler {
             message = Objects.requireNonNull(methodException.getBindingResult().getFieldError()).getDefaultMessage();
         } else if (exception instanceof BindException bindException && bindException.hasErrors()) {
             message = Objects.requireNonNull(bindException.getFieldError()).getDefaultMessage();
-        } else if (exception instanceof ConstraintViolationException constraintViolationException && !constraintViolationException.getConstraintViolations().isEmpty()) {
+        } else if (exception instanceof ConstraintViolationException constraintViolationException
+                && !constraintViolationException.getConstraintViolations().isEmpty()) {
             message = constraintViolationException.getConstraintViolations().iterator().next().getMessage();
         }
         return ResponseEntity.ok(new ApiResponse<>(ErrorCode.VALIDATION_FAILED.code(), message, null));
@@ -57,6 +61,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleAny(Exception exception) {
+        log.error("Unhandled exception", exception);
         return ResponseEntity.ok(new ApiResponse<>(ErrorCode.INTERNAL_ERROR.code(), ErrorCode.INTERNAL_ERROR.message(), null));
     }
 }

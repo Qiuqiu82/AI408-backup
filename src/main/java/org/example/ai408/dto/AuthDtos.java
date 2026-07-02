@@ -149,4 +149,43 @@ public final class AuthDtos {
 
     public record UserDTO(String id, String mobile, String nickname, String avatarUrl, String role, String createdAt) {
     }
+
+    public static class UpdateUserRequest {
+        @Valid
+        @NotNull
+        @JsonProperty("data")
+        private Payload data;
+
+        public Payload getData() {
+            return data;
+        }
+
+        public void setData(Payload data) {
+            this.data = data;
+        }
+
+        public static class Payload {
+            @Size(max = 50)
+            private String nickname;
+
+            @Size(max = 255)
+            private String avatarUrl;
+
+            public String getNickname() {
+                return nickname;
+            }
+
+            public void setNickname(String nickname) {
+                this.nickname = nickname;
+            }
+
+            public String getAvatarUrl() {
+                return avatarUrl;
+            }
+
+            public void setAvatarUrl(String avatarUrl) {
+                this.avatarUrl = avatarUrl;
+            }
+        }
+    }
 }

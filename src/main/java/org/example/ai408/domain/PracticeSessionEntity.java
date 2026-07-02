@@ -3,8 +3,9 @@ package org.example.ai408.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ai408_practice_session")
@@ -34,8 +35,8 @@ public class PracticeSessionEntity extends BaseEntity {
     @Column(name = "current_question_id", length = 64)
     private String currentQuestionId;
 
-    @Lob
     @Column(name = "question_ids_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String questionIdsJson;
 
     @Column(name = "review_id", length = 64)
@@ -50,10 +51,10 @@ public class PracticeSessionEntity extends BaseEntity {
     @Column(name = "wrong_count")
     private Integer wrongCount;
 
-    @Column(name = "started_at")
+    @Column(name = "started_at", length = 32)
     private String startedAt;
 
-    @Column(name = "finished_at")
+    @Column(name = "finished_at", length = 32)
     private String finishedAt;
 
     public String getId() {

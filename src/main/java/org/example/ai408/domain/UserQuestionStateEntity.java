@@ -3,8 +3,9 @@ package org.example.ai408.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ai408_user_question_state")
@@ -25,16 +26,16 @@ public class UserQuestionStateEntity extends BaseEntity {
     @Column(name = "favorite_importance", nullable = false)
     private Integer favoriteImportance;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String note;
 
     @Column(name = "in_wrong_book", nullable = false)
     private Boolean inWrongBook;
 
-    @Column(name = "last_wrong_at")
+    @Column(name = "last_wrong_at", length = 32)
     private String lastWrongAt;
 
-    @Column(name = "last_favorite_at")
+    @Column(name = "last_favorite_at", length = 32)
     private String lastFavoriteAt;
 
     @Column(name = "correct_count", nullable = false)
@@ -46,12 +47,12 @@ public class UserQuestionStateEntity extends BaseEntity {
     @Column(name = "essay_done", nullable = false)
     private Boolean essayDone;
 
-    @Lob
     @Column(name = "selected_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String selectedJson;
 
-    @Lob
     @Column(name = "step_status_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String stepStatusJson;
 
     public String getId() {

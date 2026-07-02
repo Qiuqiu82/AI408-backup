@@ -3,8 +3,9 @@ package org.example.ai408.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ai408_session_question")
@@ -28,22 +29,22 @@ public class PracticeSessionQuestionEntity extends BaseEntity {
     @Column(name = "new_type", nullable = false)
     private Boolean newType;
 
-    @Lob
     @Column(name = "answer_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String answerJson;
 
     @Column(name = "is_correct")
     private Boolean isCorrect;
 
-    @Lob
     @Column(name = "correct_answer_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String correctAnswerJson;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String analysis;
 
-    @Lob
     @Column(name = "step_status_json")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String stepStatusJson;
 
     @Column(name = "elapsed_seconds")
