@@ -28,6 +28,16 @@ logging:
     org.hibernate.SQL: warn
 
 ai408:
+  cos:
+    enable: true
+    region: ap-shanghai
+    secret-id: ${AI408_COS_SECRET_ID:}
+    secret-key: ${AI408_COS_SECRET_KEY:}
+    bucket-name: ai-question-bank-1331262884
+    domain: https://ai-question-bank-1331262884.cos.ap-shanghai.myqcloud.com
+    path-prefix: questions
+    sign-expire-seconds: 600
+    public-read: false
   files:
     storage-dir: ${AI408_STORAGE_DIR:./storage}
     template-dir: ${AI408_TEMPLATE_DIR:./storage/templates}
