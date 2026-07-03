@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import org.example.ai408.common.ApiResponse;
 import org.example.ai408.common.PageResponse;
 import org.example.ai408.dto.CommonDtos;
-import org.example.ai408.security.SecurityUtils;
 import org.example.ai408.service.QuestionService;
 import org.example.ai408.service.UserService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +36,11 @@ public class QuestionController {
     }
 
     @GetMapping("/questions/{id}")
-    public ApiResponse<CommonDtos.QuestionDetailDTO> getQuestion(@PathVariable String id, @RequestParam(name = "view", defaultValue = "practice") String view) {
-        return ApiResponse.ok(questionService.getQuestionDetail(id, view));
+    public ApiResponse<CommonDtos.QuestionDetailDTO> getQuestion(
+            @PathVariable String id,
+            @RequestParam(name = "view", defaultValue = "practice") String view,
+            @RequestParam(name = "sessionId", required = false) String sessionId
+    ) {
+        return ApiResponse.ok(questionService.getQuestionDetail(userService.currentUserEntity().getId(), id, view, sessionId));
     }
 }

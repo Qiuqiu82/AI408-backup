@@ -10,6 +10,7 @@ public record AppProperties(
         Auth auth,
         Jwt jwt,
         Ai ai,
+        Cos cos,
         Admin admin,
         Cors cors
 ) {
@@ -19,7 +20,19 @@ public record AppProperties(
 
     public record Jwt(String secret, long accessTokenMinutes, long refreshTokenDays) {}
 
-    public record Ai(String baseUrl, String apiKey, String model, String systemPrompt, boolean mockEnabled) {}
+    public record Ai(String baseUrl, String apiKey, String model, String visionModel, String systemPrompt, boolean mockEnabled) {}
+
+    public record Cos(
+            boolean enable,
+            String region,
+            String secretId,
+            String secretKey,
+            String bucketName,
+            String domain,
+            String pathPrefix,
+            long signExpireSeconds,
+            boolean publicRead
+    ) {}
 
     public record Admin(String seedMobile, String seedNickname) {}
 

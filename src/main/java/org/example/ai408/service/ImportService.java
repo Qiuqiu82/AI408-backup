@@ -23,10 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,24 +34,32 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
 public class ImportService {
+    private static final List<String> SUPPORTED_IMAGE_EXTENSIONS = List.of("png", "jpg", "jpeg", "webp", "gif");
+
     private final ImportJobRepository importJobRepository;
     private final QuestionRepository questionRepository;
     private final FileStorageService fileStorageService;
+    private final CosStorageService cosStorageService;
 
-    public ImportService(ImportJobRepository importJobRepository, QuestionRepository questionRepository, FileStorageService fileStorageService) {
+    public ImportService(
+            ImportJobRepository importJobRepository,
+            QuestionRepository questionRepository,
+            FileStorageService fileStorageService,
+            CosStorageService cosStorageService
+    ) {
         this.importJobRepository = importJobRepository;
         this.questionRepository = questionRepository;
         this.fileStorageService = fileStorageService;
+        this.cosStorageService = cosStorageService;
     }
 
     public CommonDtos.TemplateDTO template() {
-        return new CommonDtos.TemplateDTO("/templates/ai408-question-template.xlsx", "v1");
+        return new CommonDtos.TemplateDTO("/templates/ai408-question-template.xlsx", "v2");
     }
 
     public CommonDtos.ImportJobDTO submitImport(MultipartFile file, String importType) {
@@ -140,6 +148,7 @@ public class ImportService {
         target.setQuestionType(source.getQuestionType());
         target.setTitle(source.getTitle());
         target.setStem(source.getStem());
+        target.setStemImageUrl(source.getStemImageUrl());
         target.setOptionsJson(source.getOptionsJson());
         target.setAnswerJson(source.getAnswerJson());
         target.setAnalysis(source.getAnalysis());
@@ -163,6 +172,7 @@ public class ImportService {
         if (meta == null) {
             throw new IllegalArgumentException("unknown subject_code");
         }
+
         List<String> options = parseJsonList(firstNonBlank(row, "options_json", "options"));
         List<String> answer = parseJsonList(firstNonBlank(row, "answer_json", "answer"));
         List<String> tags = parseJsonList(firstNonBlank(row, "tags", "tags_json"));
@@ -188,6 +198,7 @@ public class ImportService {
         question.setQuestionType(questionType);
         question.setTitle(title);
         question.setStem(stem);
+        question.setStemImageUrl(resolveStemImage(row, subjectCode, questionCode));
         question.setOptionsJson(JsonUtils.write(options));
         question.setAnswerJson(JsonUtils.write(answer));
         question.setAnalysis(firstNonBlank(row, "analysis"));
@@ -241,6 +252,7 @@ public class ImportService {
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 headers.put(i, normalizeHeader(formatter.formatCellValue(headerRow.getCell(i))));
             }
+
             List<RowData> rows = new ArrayList<>();
             for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -360,6 +372,58 @@ public class ImportService {
             return "";
         }
         return fileName.substring(index + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveStemImage(RowData row, String subjectCode, String questionCode) {
+        String stemImageUrl = firstNonBlank(row, "stem_image_url", "stemImageUrl");
+        if (!stemImageUrl.isBlank()) {
+            return validateAbsoluteUrl(stemImageUrl);
+        }
+
+        String stemImagePath = firstNonBlank(row, "stem_image_path", "stemImagePath");
+        if (stemImagePath.isBlank()) {
+            return "";
+        }
+
+        Path localPath;
+        try {
+            localPath = Path.of(stemImagePath.trim()).normalize();
+        } catch (InvalidPathException exception) {
+            throw new IllegalArgumentException("stem_image_path is invalid");
+        }
+
+        if (!localPath.isAbsolute()) {
+            throw new IllegalArgumentException("stem_image_path must be absolute path");
+        }
+        if (!Files.exists(localPath) || !Files.isRegularFile(localPath)) {
+            throw new IllegalArgumentException("stem_image_path file does not exist");
+        }
+
+        String extension = fileExtension(localPath.getFileName().toString());
+        if (!SUPPORTED_IMAGE_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("stem_image_path only supports png/jpg/jpeg/webp/gif");
+        }
+
+        return cosStorageService.uploadQuestionImage(localPath, subjectCode, questionCode);
+    }
+
+    private String validateAbsoluteUrl(String value) {
+        try {
+            URI uri = URI.create(value.trim());
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                throw new IllegalArgumentException("stem_image_url must start with http or https");
+            }
+            if (uri.getHost() == null || uri.getHost().isBlank()) {
+                throw new IllegalArgumentException("stem_image_url host is required");
+            }
+            return uri.toString();
+        } catch (IllegalArgumentException exception) {
+            if (exception.getMessage() != null && exception.getMessage().startsWith("stem_image_url")) {
+                throw exception;
+            }
+            throw new IllegalArgumentException("stem_image_url is invalid");
+        }
     }
 
     private record RowData(int rowNo, Map<String, String> values) {

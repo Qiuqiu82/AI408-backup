@@ -10,11 +10,9 @@ import org.example.ai408.repository.UserRepository;
 import org.example.ai408.util.JsonUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -79,6 +77,7 @@ public class DataInitializer {
             target.setQuestionType(question.getQuestionType());
             target.setTitle(question.getTitle());
             target.setStem(question.getStem());
+            target.setStemImageUrl(question.getStemImageUrl());
             target.setOptionsJson(question.getOptionsJson());
             target.setAnswerJson(question.getAnswerJson());
             target.setAnalysis(question.getAnalysis());
@@ -182,14 +181,7 @@ public class DataInitializer {
 
     private void seedTemplate() throws IOException {
         Path template = fileStorageService.templateDir().resolve("ai408-question-template.xlsx");
-        if (Files.exists(template)) {
-            return;
-        }
-        try (InputStream inputStream = new ClassPathResource("templates/ai408-question-template.xlsx").getInputStream()) {
-            Files.copy(inputStream, template);
-        } catch (Exception ignored) {
-            TemplateGenerator.writeTemplate(template);
-        }
+        TemplateGenerator.writeTemplate(template);
     }
 
     private QuestionEntity question(
@@ -218,6 +210,7 @@ public class DataInitializer {
         entity.setQuestionType(questionType);
         entity.setTitle(title);
         entity.setStem(stem);
+        entity.setStemImageUrl(null);
         entity.setOptionsJson(optionsJson);
         entity.setAnswerJson(answerJson);
         entity.setAnalysis(analysis);

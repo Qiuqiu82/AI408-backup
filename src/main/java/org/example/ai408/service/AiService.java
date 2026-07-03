@@ -75,7 +75,7 @@ public class AiService {
                 if (appProperties.ai().mockEnabled()
                         || appProperties.ai().apiKey() == null
                         || appProperties.ai().apiKey().isBlank()) {
-                    emitText(emitter, buildMockExplanation(question, payload.getUserAnswer()));
+                    emitText(emitter, buildMockExplanation(question, sessionQuestion, payload.getUserAnswer()));
                 } else {
                     streamFromDashScope(emitter, question, sessionQuestion, payload.getUserAnswer());
                 }
@@ -99,11 +99,14 @@ public class AiService {
             List<String> userAnswer
     ) throws IOException, InterruptedException {
         String prompt = buildPrompt(question, sessionQuestion, userAnswer);
+        String stemImageUrl = resolveStemImageUrl(question, sessionQuestion);
+        boolean hasImage = !stemImageUrl.isBlank();
+
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", appProperties.ai().model());
+        body.put("model", hasImage ? resolveVisionModel() : appProperties.ai().model());
         body.put("messages", List.of(
                 Map.of("role", "system", "content", appProperties.ai().systemPrompt()),
-                Map.of("role", "user", "content", prompt)
+                Map.of("role", "user", "content", hasImage ? buildVisionContent(prompt, stemImageUrl) : prompt)
         ));
         body.put("stream", true);
         body.put("temperature", 0.2);
@@ -141,9 +144,10 @@ public class AiService {
                     continue;
                 }
                 JsonNode choice = choices.get(0);
-                String chunk = choice.path("delta").path("content").asText("");
+                JsonNode contentNode = choice.path("delta").path("content");
+                String chunk = extractChunk(contentNode);
                 if (chunk.isBlank()) {
-                    chunk = choice.path("message").path("content").asText("");
+                    chunk = extractChunk(choice.path("message").path("content"));
                 }
                 if (!chunk.isBlank()) {
                     emitter.send(SseEmitter.event().name("delta").data(new CommonDtos.AIStreamEventDTO("delta", chunk)));
@@ -159,36 +163,93 @@ public class AiService {
         }
     }
 
-    private String buildMockExplanation(QuestionEntity question, List<String> userAnswer) {
+    private String buildMockExplanation(QuestionEntity question, PracticeSessionQuestionEntity sessionQuestion, List<String> userAnswer) {
         List<String> options = Support.parseOptions(question.getOptionsJson()).stream()
                 .map(option -> option.key() + ". " + option.text())
                 .toList();
         List<String> answer = Support.parseStringList(question.getAnswerJson());
         List<String> actualAnswer = userAnswer == null ? List.of() : userAnswer;
-        return String.join("\n",
-                "题型：" + question.getQuestionType(),
-                "题目：" + question.getTitle(),
-                "选项：" + String.join(" | ", options),
-                "你的答案：" + String.join(" / ", actualAnswer),
-                "标准答案：" + String.join(" / ", answer),
-                "解析：" + Support.safe(question.getAnalysis()),
-                "一句话总结：先抓题眼，再对照选项逐个排除。"
-        );
+        List<String> lines = new ArrayList<>();
+        lines.add("题型：" + question.getQuestionType());
+        lines.add("题目：" + question.getTitle());
+        lines.add("选项：" + String.join(" | ", options));
+        if (!resolveStemImageUrl(question, sessionQuestion).isBlank()) {
+            lines.add("配图：这道题包含题干配图，正式环境会调用视觉模型结合图片讲解。");
+        }
+        lines.add("你的答案：" + String.join(" / ", actualAnswer));
+        lines.add("标准答案：" + String.join(" / ", answer));
+        lines.add("答案解析：" + resolveAnalysis(question, sessionQuestion));
+        lines.add("一句话总结：先抓题眼，再对照选项逐个排除。");
+        return String.join("\n", lines);
     }
 
     private String buildPrompt(QuestionEntity question, PracticeSessionQuestionEntity sessionQuestion, List<String> userAnswer) {
+        String imageLine = resolveStemImageUrl(question, sessionQuestion).isBlank()
+                ? "题目配图：无"
+                : "题目配图：请结合随附图片一起讲解";
         return String.join("\n",
                 "请针对这道 408 题目做讲解。",
                 "要求：使用中文，结构清晰，简洁直接，优先输出关键思路、标准答案、易错点和一句话总结。",
                 "题目类型：" + question.getQuestionType(),
                 "题目标题：" + question.getTitle(),
                 "题干：" + Support.safe(question.getStem()),
+                imageLine,
                 "选项：" + Support.parseOptions(question.getOptionsJson()),
                 "用户答案：" + String.join(" / ", userAnswer == null ? List.of() : userAnswer),
                 "标准答案：" + Support.parseStringList(question.getAnswerJson()),
-                "题目解析：" + Support.safe(question.getAnalysis()),
+                "题目解析：" + resolveAnalysis(question, sessionQuestion),
                 "当前判定：" + sessionQuestion.getQuestionStatus()
         );
+    }
+
+    private List<Map<String, Object>> buildVisionContent(String prompt, String stemImageUrl) {
+        List<Map<String, Object>> content = new ArrayList<>();
+        content.add(Map.of("type", "text", "text", prompt));
+        content.add(Map.of("type", "image_url", "image_url", Map.of("url", stemImageUrl)));
+        return content;
+    }
+
+    private String resolveVisionModel() {
+        if (appProperties.ai().visionModel() == null || appProperties.ai().visionModel().isBlank()) {
+            throw new IllegalStateException("当前题目包含图片，但未配置 AI408_QWEN_VISION_MODEL，暂时无法生成视觉讲解。");
+        }
+        return appProperties.ai().visionModel();
+    }
+
+    private String resolveStemImageUrl(QuestionEntity question, PracticeSessionQuestionEntity sessionQuestion) {
+        String sessionImage = sessionQuestion == null ? "" : Support.safe(sessionQuestion.getStemImageUrl());
+        if (!sessionImage.isBlank()) {
+            return sessionImage;
+        }
+        return Support.safe(question.getStemImageUrl());
+    }
+
+    private String resolveAnalysis(QuestionEntity question, PracticeSessionQuestionEntity sessionQuestion) {
+        if (sessionQuestion != null && sessionQuestion.getAnalysis() != null && !sessionQuestion.getAnalysis().isBlank()) {
+            return sessionQuestion.getAnalysis();
+        }
+        return Support.safe(question.getAnalysis());
+    }
+
+    private String extractChunk(JsonNode contentNode) {
+        if (contentNode == null || contentNode.isMissingNode() || contentNode.isNull()) {
+            return "";
+        }
+        if (contentNode.isTextual()) {
+            return contentNode.asText("");
+        }
+        if (contentNode.isArray()) {
+            StringBuilder builder = new StringBuilder();
+            for (JsonNode item : contentNode) {
+                String text = item.path("text").asText("");
+                if (text.isBlank()) {
+                    text = item.path("content").asText("");
+                }
+                builder.append(text);
+            }
+            return builder.toString();
+        }
+        return contentNode.path("text").asText("");
     }
 
     private String normalizeBaseUrl(String baseUrl) {

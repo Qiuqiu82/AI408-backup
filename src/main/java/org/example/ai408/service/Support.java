@@ -47,6 +47,22 @@ public final class Support {
     }
 
     public static CommonDtos.QuestionDetailDTO toQuestionDetail(QuestionEntity question, boolean reviewView) {
+        return toQuestionDetail(
+                question,
+                reviewView,
+                safe(question.getStemImageUrl()),
+                reviewView ? parseStringList(question.getAnswerJson()) : Collections.emptyList(),
+                reviewView ? safe(question.getAnalysis()) : ""
+        );
+    }
+
+    public static CommonDtos.QuestionDetailDTO toQuestionDetail(
+            QuestionEntity question,
+            boolean reviewView,
+            String stemImageUrl,
+            List<String> answer,
+            String analysis
+    ) {
         return new CommonDtos.QuestionDetailDTO(
                 question.getId(),
                 question.getSubjectCode(),
@@ -54,9 +70,10 @@ public final class Support {
                 question.getQuestionType(),
                 question.getTitle(),
                 question.getStem(),
+                safe(stemImageUrl),
                 reviewView ? parseOptions(question.getOptionsJson()) : parseOptions(question.getOptionsJson()),
-                reviewView ? parseStringList(question.getAnswerJson()) : Collections.emptyList(),
-                reviewView ? safe(question.getAnalysis()) : "",
+                reviewView ? answer : Collections.emptyList(),
+                reviewView ? safe(analysis) : "",
                 parseStringList(question.getStepsJson()),
                 parseStringList(question.getTagsJson()),
                 question.getNewType(),

@@ -29,6 +29,9 @@ public class PracticeSessionQuestionEntity extends BaseEntity {
     @Column(name = "new_type", nullable = false)
     private Boolean newType;
 
+    @Column(name = "stem_image_url", length = 500)
+    private String stemImageUrl;
+
     @Column(name = "answer_json")
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String answerJson;
@@ -96,6 +99,14 @@ public class PracticeSessionQuestionEntity extends BaseEntity {
 
     public void setNewType(Boolean newType) {
         this.newType = newType;
+    }
+
+    public String getStemImageUrl() {
+        return stemImageUrl;
+    }
+
+    public void setStemImageUrl(String stemImageUrl) {
+        this.stemImageUrl = stemImageUrl;
     }
 
     public String getAnswerJson() {

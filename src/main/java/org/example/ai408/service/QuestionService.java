@@ -3,17 +3,19 @@ package org.example.ai408.service;
 import org.example.ai408.common.BusinessException;
 import org.example.ai408.common.ErrorCode;
 import org.example.ai408.common.PageResponse;
+import org.example.ai408.domain.PracticeSessionEntity;
+import org.example.ai408.domain.PracticeSessionQuestionEntity;
 import org.example.ai408.domain.QuestionEntity;
 import org.example.ai408.domain.UserQuestionStateEntity;
 import org.example.ai408.dto.CommonDtos;
+import org.example.ai408.repository.PracticeSessionQuestionRepository;
+import org.example.ai408.repository.PracticeSessionRepository;
 import org.example.ai408.repository.QuestionRepository;
 import org.example.ai408.repository.UserQuestionStateRepository;
-import org.example.ai408.util.JsonUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,10 +25,19 @@ import java.util.stream.Collectors;
 public class QuestionService {
     private final QuestionRepository questionRepository;
     private final UserQuestionStateRepository stateRepository;
+    private final PracticeSessionRepository sessionRepository;
+    private final PracticeSessionQuestionRepository sessionQuestionRepository;
 
-    public QuestionService(QuestionRepository questionRepository, UserQuestionStateRepository stateRepository) {
+    public QuestionService(
+            QuestionRepository questionRepository,
+            UserQuestionStateRepository stateRepository,
+            PracticeSessionRepository sessionRepository,
+            PracticeSessionQuestionRepository sessionQuestionRepository
+    ) {
         this.questionRepository = questionRepository;
         this.stateRepository = stateRepository;
+        this.sessionRepository = sessionRepository;
+        this.sessionQuestionRepository = sessionQuestionRepository;
     }
 
     public List<CommonDtos.SubjectDTO> listSubjects(String userId) {
@@ -81,10 +92,30 @@ public class QuestionService {
         );
     }
 
-    public CommonDtos.QuestionDetailDTO getQuestionDetail(String id, String view) {
+    public CommonDtos.QuestionDetailDTO getQuestionDetail(String userId, String id, String view, String sessionId) {
         QuestionEntity question = questionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.QUESTION_NOT_FOUND));
-        return Support.toQuestionDetail(question, "review".equalsIgnoreCase(view));
+        boolean reviewView = "review".equalsIgnoreCase(view);
+        if (sessionId == null || sessionId.isBlank()) {
+            return Support.toQuestionDetail(question, reviewView);
+        }
+
+        PracticeSessionEntity session = sessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SESSION_NOT_FOUND));
+        PracticeSessionQuestionEntity sessionQuestion = sessionQuestionRepository
+                .findBySessionIdAndQuestionId(session.getId(), id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.QUESTION_NOT_FOUND));
+
+        String stemImageUrl = Support.safe(sessionQuestion.getStemImageUrl()).isBlank()
+                ? Support.safe(question.getStemImageUrl())
+                : Support.safe(sessionQuestion.getStemImageUrl());
+        List<String> answer = reviewView && sessionQuestion.getCorrectAnswerJson() != null && !sessionQuestion.getCorrectAnswerJson().isBlank()
+                ? Support.parseStringList(sessionQuestion.getCorrectAnswerJson())
+                : (reviewView ? Support.parseStringList(question.getAnswerJson()) : List.of());
+        String analysis = reviewView && sessionQuestion.getAnalysis() != null && !sessionQuestion.getAnalysis().isBlank()
+                ? sessionQuestion.getAnalysis()
+                : (reviewView ? Support.safe(question.getAnalysis()) : "");
+        return Support.toQuestionDetail(question, reviewView, stemImageUrl, answer, analysis);
     }
 
     public List<QuestionEntity> findAllQuestions() {

@@ -37,7 +37,7 @@ ai408:
     domain: https://ai-question-bank-1331262884.cos.ap-shanghai.myqcloud.com
     path-prefix: questions
     sign-expire-seconds: 600
-    public-read: false
+    public-read: true
   files:
     storage-dir: ${AI408_STORAGE_DIR:./storage}
     template-dir: ${AI408_TEMPLATE_DIR:./storage/templates}
@@ -52,6 +52,7 @@ ai408:
     base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
     api-key: ${DASHSCOPE_API_KEY:}
     model: ${AI408_QWEN_MODEL:qwen-plus}
+    vision-model: ${AI408_QWEN_VISION_MODEL:qwen-vl-max-latest}
     system-prompt: "你是 AI408 刷题系统里的 AI 讲解老师。请用中文、结构清晰、简洁直接的方式解释题目，优先给出关键思路、标准答案、易错点和一句话总结。"
     mock-enabled: ${AI408_AI_MOCK:false}
   admin:

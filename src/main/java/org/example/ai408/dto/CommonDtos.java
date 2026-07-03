@@ -56,6 +56,7 @@ public final class CommonDtos {
             String questionType,
             String title,
             String stem,
+            String stemImageUrl,
             List<OptionDTO> options,
             List<String> answer,
             String analysis,

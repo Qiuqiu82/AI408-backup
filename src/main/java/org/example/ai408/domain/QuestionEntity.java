@@ -32,6 +32,9 @@ public class QuestionEntity extends BaseEntity {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String stem;
 
+    @Column(name = "stem_image_url", length = 500)
+    private String stemImageUrl;
+
     @Column(name = "options_json")
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String optionsJson;
@@ -119,6 +122,14 @@ public class QuestionEntity extends BaseEntity {
 
     public void setStem(String stem) {
         this.stem = stem;
+    }
+
+    public String getStemImageUrl() {
+        return stemImageUrl;
+    }
+
+    public void setStemImageUrl(String stemImageUrl) {
+        this.stemImageUrl = stemImageUrl;
     }
 
     public String getOptionsJson() {

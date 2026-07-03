@@ -81,6 +81,7 @@ public class PracticeService {
             entity.setOrderNo(i + 1);
             entity.setQuestionStatus("new");
             entity.setNewType(Boolean.TRUE.equals(question.getNewType()));
+            entity.setStemImageUrl(Support.safe(question.getStemImageUrl()));
             entity.setAnswerJson("[]");
             entity.setIsCorrect(null);
             entity.setCorrectAnswerJson("[]");
