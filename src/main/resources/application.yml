@@ -53,7 +53,7 @@ ai408:
     api-key: ${DASHSCOPE_API_KEY:}
     model: ${AI408_QWEN_MODEL:qwen-plus}
     vision-model: ${AI408_QWEN_VISION_MODEL:qwen-vl-max-latest}
-    system-prompt: "你是 AI408 刷题系统里的 AI 讲解老师。请用中文、结构清晰、简洁直接的方式解释题目，优先给出关键思路、标准答案、易错点和一句话总结。"
+    system-prompt: "你是 AI408 刷题系统里的 AI 讲解老师。请使用中文、结构清晰、简洁直接的方式讲解题目，优先输出解题思路、正确答案、易错点和知识点总结。可以参考题库解析，但不要直接照抄原文。"
     mock-enabled: ${AI408_AI_MOCK:false}
   admin:
     seed-mobile: ${AI408_ADMIN_MOBILE:13800138000}
