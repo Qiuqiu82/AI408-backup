@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS ai408_exam_record (
+    id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(64) NOT NULL,
+    score INT NOT NULL,
+    total_count INT NOT NULL,
+    answered_count INT NOT NULL,
+    correct_count INT NOT NULL,
+    wrong_count INT NOT NULL,
+    duration_seconds INT NOT NULL,
+    submitted_at VARCHAR(32) NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_ai408_exam_record_user_created (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ai408_exam_record_question (
+    id VARCHAR(64) NOT NULL,
+    record_id VARCHAR(64) NOT NULL,
+    question_id VARCHAR(64) NOT NULL,
+    order_no INT NOT NULL,
+    subject_code VARCHAR(20) NOT NULL,
+    subject_name VARCHAR(50) NOT NULL,
+    question_type VARCHAR(20) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    stem LONGTEXT NULL,
+    stem_image_url VARCHAR(500) NULL,
+    options_json LONGTEXT NULL,
+    steps_json LONGTEXT NULL,
+    tags_json LONGTEXT NULL,
+    new_type TINYINT(1) NULL,
+    user_answer_json LONGTEXT NULL,
+    step_status_json LONGTEXT NULL,
+    correct_answer_json LONGTEXT NULL,
+    is_correct TINYINT(1) NOT NULL,
+    analysis LONGTEXT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_ai408_exam_record_question_record_order (record_id, order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

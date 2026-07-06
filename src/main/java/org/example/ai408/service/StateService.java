@@ -96,6 +96,24 @@ public class StateService {
         return new CommonDtos.ClearResultDTO(cleared);
     }
 
+    public void applyAnswerResult(String userId, QuestionEntity question, boolean isCorrect) {
+        UserQuestionStateEntity state = stateRepository.findByUserIdAndQuestionId(userId, question.getId())
+                .orElseGet(() -> createState(userId, question.getId()));
+        if (isCorrect) {
+            state.setCorrectCount(valueOrZero(state.getCorrectCount()) + 1);
+            state.setQuestionStatus("correct");
+            if (Boolean.TRUE.equals(state.getInWrongBook())) {
+                state.setInWrongBook(false);
+            }
+        } else {
+            state.setWrongCount(valueOrZero(state.getWrongCount()) + 1);
+            state.setQuestionStatus("wrong");
+            state.setInWrongBook(true);
+            state.setLastWrongAt(LocalDate.now(ZoneId.of("Asia/Shanghai")).toString());
+        }
+        stateRepository.save(state);
+    }
+
     private PageResponse<CommonDtos.WrongBookRecordDTO> pageStates(String userId, CommonDtos.StatePageRequest.Payload payload, boolean wrongBook) {
         List<CommonDtos.StateRow> rows = buildRows(userId, payload).stream()
                 .filter(row -> wrongBook ? row.inWrongBook : row.favoriteImportance > 0)
