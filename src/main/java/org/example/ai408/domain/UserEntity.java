@@ -35,6 +35,12 @@ public class UserEntity extends BaseEntity {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "wrong_book_auto_remove_enabled", nullable = false)
+    private Boolean wrongBookAutoRemoveEnabled;
+
+    @Column(name = "wrong_book_auto_remove_threshold", nullable = false)
+    private Integer wrongBookAutoRemoveThreshold;
+
     public String getId() {
         return id;
     }
@@ -97,5 +103,21 @@ public class UserEntity extends BaseEntity {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public Boolean getWrongBookAutoRemoveEnabled() {
+        return wrongBookAutoRemoveEnabled;
+    }
+
+    public void setWrongBookAutoRemoveEnabled(Boolean wrongBookAutoRemoveEnabled) {
+        this.wrongBookAutoRemoveEnabled = wrongBookAutoRemoveEnabled;
+    }
+
+    public Integer getWrongBookAutoRemoveThreshold() {
+        return wrongBookAutoRemoveThreshold;
+    }
+
+    public void setWrongBookAutoRemoveThreshold(Integer wrongBookAutoRemoveThreshold) {
+        this.wrongBookAutoRemoveThreshold = wrongBookAutoRemoveThreshold;
     }
 }

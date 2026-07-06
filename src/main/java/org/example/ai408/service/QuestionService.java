@@ -109,9 +109,15 @@ public class QuestionService {
         String stemImageUrl = Support.safe(sessionQuestion.getStemImageUrl()).isBlank()
                 ? Support.safe(question.getStemImageUrl())
                 : Support.safe(sessionQuestion.getStemImageUrl());
-        List<String> answer = reviewView && sessionQuestion.getCorrectAnswerJson() != null && !sessionQuestion.getCorrectAnswerJson().isBlank()
-                ? Support.parseStringList(sessionQuestion.getCorrectAnswerJson())
-                : (reviewView ? Support.parseStringList(question.getAnswerJson()) : List.of());
+        List<String> answer = List.of();
+        if (reviewView) {
+            List<String> sessionAnswer = sessionQuestion.getCorrectAnswerJson() == null || sessionQuestion.getCorrectAnswerJson().isBlank()
+                    ? List.of()
+                    : Support.parseStringList(sessionQuestion.getCorrectAnswerJson());
+            answer = sessionAnswer.isEmpty()
+                    ? Support.parseStringList(question.getAnswerJson())
+                    : sessionAnswer;
+        }
         String analysis = reviewView && sessionQuestion.getAnalysis() != null && !sessionQuestion.getAnalysis().isBlank()
                 ? sessionQuestion.getAnalysis()
                 : (reviewView ? Support.safe(question.getAnalysis()) : "");

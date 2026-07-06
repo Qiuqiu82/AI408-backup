@@ -147,7 +147,16 @@ public final class AuthDtos {
     public record AuthTokens(String accessToken, String refreshToken, long expiresIn, UserDTO user) {
     }
 
-    public record UserDTO(String id, String mobile, String nickname, String avatarUrl, String role, String createdAt) {
+    public record UserDTO(
+            String id,
+            String mobile,
+            String nickname,
+            String avatarUrl,
+            String role,
+            String createdAt,
+            Boolean wrongBookAutoRemoveEnabled,
+            Integer wrongBookAutoRemoveThreshold
+    ) {
     }
 
     public static class UpdateUserRequest {
@@ -171,6 +180,10 @@ public final class AuthDtos {
             @Size(max = 255)
             private String avatarUrl;
 
+            private Boolean wrongBookAutoRemoveEnabled;
+
+            private Integer wrongBookAutoRemoveThreshold;
+
             public String getNickname() {
                 return nickname;
             }
@@ -185,6 +198,22 @@ public final class AuthDtos {
 
             public void setAvatarUrl(String avatarUrl) {
                 this.avatarUrl = avatarUrl;
+            }
+
+            public Boolean getWrongBookAutoRemoveEnabled() {
+                return wrongBookAutoRemoveEnabled;
+            }
+
+            public void setWrongBookAutoRemoveEnabled(Boolean wrongBookAutoRemoveEnabled) {
+                this.wrongBookAutoRemoveEnabled = wrongBookAutoRemoveEnabled;
+            }
+
+            public Integer getWrongBookAutoRemoveThreshold() {
+                return wrongBookAutoRemoveThreshold;
+            }
+
+            public void setWrongBookAutoRemoveThreshold(Integer wrongBookAutoRemoveThreshold) {
+                this.wrongBookAutoRemoveThreshold = wrongBookAutoRemoveThreshold;
             }
         }
     }

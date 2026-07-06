@@ -98,6 +98,8 @@ public class AuthService {
                 : "AI408 学员");
         user.setAvatarUrl("");
         user.setRole(mobile.equals(appProperties.admin().seedMobile()) ? "admin" : "student");
+        user.setWrongBookAutoRemoveEnabled(false);
+        user.setWrongBookAutoRemoveThreshold(1);
         user.setLastLoginAt(LocalDateTime.now());
         return user;
     }

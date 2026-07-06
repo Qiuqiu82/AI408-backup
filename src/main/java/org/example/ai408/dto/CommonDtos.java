@@ -119,12 +119,34 @@ public final class CommonDtos {
     public record SubjectStatDTO(String subjectCode, String subjectName, int correctCount, int wrongCount) {
     }
 
+    public record ReviewQuestionDTO(
+            String questionId,
+            int orderNo,
+            String subjectCode,
+            String subjectName,
+            String questionType,
+            String title,
+            String stem,
+            String stemImageUrl,
+            List<OptionDTO> options,
+            List<String> steps,
+            List<String> tags,
+            Boolean newType,
+            List<String> userAnswer,
+            List<Boolean> stepStatus,
+            List<String> correctAnswer,
+            Boolean isCorrect,
+            String analysis
+    ) {
+    }
+
     public record ReviewDTO(
             int accuracy,
             int durationSeconds,
             int answeredCount,
             int wrongCount,
             List<String> wrongQuestionIds,
+            List<ReviewQuestionDTO> wrongQuestions,
             List<String> weakPoints,
             List<SubjectStatDTO> subjectStats
     ) {
@@ -140,6 +162,16 @@ public final class CommonDtos {
     }
 
     public record WrongBookRecordDTO(String questionId, String title, String subjectName, String tag, String wrongAt) {
+    }
+
+    public record WrongBookStatsDTO(
+            int totalWrongCount,
+            int todayWrongCount,
+            int answeredCount,
+            int wrongRate,
+            List<String> wrongQuestionIds,
+            List<String> todayWrongQuestionIds
+    ) {
     }
 
     public record FavoriteRecordDTO(String questionId, String title, String subjectName, Integer favoriteImportance, String favoriteAt) {

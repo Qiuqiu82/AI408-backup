@@ -4,9 +4,11 @@ import org.example.ai408.common.BusinessException;
 import org.example.ai408.common.ErrorCode;
 import org.example.ai408.common.PageResponse;
 import org.example.ai408.domain.QuestionEntity;
+import org.example.ai408.domain.UserEntity;
 import org.example.ai408.domain.UserQuestionStateEntity;
 import org.example.ai408.dto.CommonDtos;
 import org.example.ai408.repository.QuestionRepository;
+import org.example.ai408.repository.UserRepository;
 import org.example.ai408.repository.UserQuestionStateRepository;
 import org.example.ai408.util.JsonUtils;
 import org.springframework.stereotype.Service;
@@ -23,14 +25,43 @@ import java.util.stream.Collectors;
 public class StateService {
     private final UserQuestionStateRepository stateRepository;
     private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
 
-    public StateService(UserQuestionStateRepository stateRepository, QuestionRepository questionRepository) {
+    public StateService(UserQuestionStateRepository stateRepository, QuestionRepository questionRepository, UserRepository userRepository) {
         this.stateRepository = stateRepository;
         this.questionRepository = questionRepository;
+        this.userRepository = userRepository;
     }
 
     public PageResponse<CommonDtos.WrongBookRecordDTO> pageWrongBook(String userId, CommonDtos.StatePageRequest.Payload payload) {
         return pageStates(userId, payload, true);
+    }
+
+    public CommonDtos.WrongBookStatsDTO wrongBookStats(String userId) {
+        List<UserQuestionStateEntity> states = stateRepository.findByUserId(userId);
+        String today = LocalDate.now(ZoneId.of("Asia/Shanghai")).toString();
+        List<UserQuestionStateEntity> wrongStates = states.stream()
+                .filter(state -> Boolean.TRUE.equals(state.getInWrongBook()))
+                .toList();
+        List<String> wrongQuestionIds = wrongStates.stream()
+                .map(UserQuestionStateEntity::getQuestionId)
+                .toList();
+        List<String> todayWrongQuestionIds = wrongStates.stream()
+                .filter(state -> today.equals(state.getLastWrongAt()))
+                .map(UserQuestionStateEntity::getQuestionId)
+                .toList();
+        int answeredCount = (int) states.stream()
+                .filter(this::isAnswered)
+                .count();
+        int wrongRate = answeredCount == 0 ? 0 : (int) Math.round(wrongStates.size() * 100.0 / answeredCount);
+        return new CommonDtos.WrongBookStatsDTO(
+                wrongStates.size(),
+                todayWrongQuestionIds.size(),
+                answeredCount,
+                wrongRate,
+                wrongQuestionIds,
+                todayWrongQuestionIds
+        );
     }
 
     public PageResponse<CommonDtos.FavoriteRecordDTO> pageFavorites(String userId, CommonDtos.StatePageRequest.Payload payload) {
@@ -61,6 +92,9 @@ public class StateService {
             if (!payload.getInWrongBook() && "wrong".equals(state.getQuestionStatus())) {
                 state.setQuestionStatus(valueOrZero(state.getCorrectCount()) > 0 ? "correct" : "new");
             }
+            if (!payload.getInWrongBook()) {
+                state.setWrongBookResolveStreak(0);
+            }
         }
         stateRepository.save(state);
         return new CommonDtos.StateUpdateResultDTO(questionId, state.getFavoriteImportance(), state.getInWrongBook(), state.getNote());
@@ -73,6 +107,7 @@ public class StateService {
             if (Boolean.TRUE.equals(state.getInWrongBook())) {
                 cleared++;
                 state.setInWrongBook(false);
+                state.setWrongBookResolveStreak(0);
                 if ("wrong".equals(state.getQuestionStatus())) {
                     state.setQuestionStatus(valueOrZero(state.getCorrectCount()) > 0 ? "correct" : "new");
                 }
@@ -97,18 +132,27 @@ public class StateService {
     }
 
     public void applyAnswerResult(String userId, QuestionEntity question, boolean isCorrect) {
+        UserEntity user = userRepository.findById(userId).orElse(null);
         UserQuestionStateEntity state = stateRepository.findByUserIdAndQuestionId(userId, question.getId())
                 .orElseGet(() -> createState(userId, question.getId()));
         if (isCorrect) {
             state.setCorrectCount(valueOrZero(state.getCorrectCount()) + 1);
             state.setQuestionStatus("correct");
             if (Boolean.TRUE.equals(state.getInWrongBook())) {
-                state.setInWrongBook(false);
+                int streak = valueOrZero(state.getWrongBookResolveStreak()) + 1;
+                state.setWrongBookResolveStreak(streak);
+                if (shouldAutoRemoveWrongBook(user, streak)) {
+                    state.setInWrongBook(false);
+                    state.setWrongBookResolveStreak(0);
+                }
+            } else {
+                state.setWrongBookResolveStreak(0);
             }
         } else {
             state.setWrongCount(valueOrZero(state.getWrongCount()) + 1);
             state.setQuestionStatus("wrong");
             state.setInWrongBook(true);
+            state.setWrongBookResolveStreak(0);
             state.setLastWrongAt(LocalDate.now(ZoneId.of("Asia/Shanghai")).toString());
         }
         stateRepository.save(state);
@@ -209,10 +253,21 @@ public class StateService {
         state.setInWrongBook(false);
         state.setCorrectCount(0);
         state.setWrongCount(0);
+        state.setWrongBookResolveStreak(0);
         state.setEssayDone(false);
         state.setSelectedJson("[]");
         state.setStepStatusJson("[]");
         return state;
+    }
+
+    private boolean shouldAutoRemoveWrongBook(UserEntity user, int streak) {
+        boolean enabled = user != null && Boolean.TRUE.equals(user.getWrongBookAutoRemoveEnabled());
+        int threshold = user == null || user.getWrongBookAutoRemoveThreshold() == null ? 1 : user.getWrongBookAutoRemoveThreshold();
+        return enabled && streak >= threshold;
+    }
+
+    private boolean isAnswered(UserQuestionStateEntity state) {
+        return "correct".equals(state.getQuestionStatus()) || "wrong".equals(state.getQuestionStatus()) || Boolean.TRUE.equals(state.getEssayDone());
     }
 
     private String safe(String value) {

@@ -213,6 +213,8 @@ public class PracticeService {
         PracticeSessionEntity session = loadSession(userId, sessionId);
         List<PracticeSessionQuestionEntity> sessionQuestions = sessionQuestionRepository.findBySessionIdOrderByOrderNoAsc(sessionId);
         List<QuestionEntity> questions = loadQuestions(sessionQuestions);
+        Map<String, QuestionEntity> questionMap = questions.stream()
+                .collect(Collectors.toMap(QuestionEntity::getId, question -> question, (a, b) -> a, LinkedHashMap::new));
         int answeredCount = (int) sessionQuestions.stream().filter(this::isAnswered).count();
         int correctCount = (int) sessionQuestions.stream().filter(question -> Boolean.TRUE.equals(question.getIsCorrect())).count();
         int wrongCount = answeredCount - correctCount;
@@ -229,12 +231,14 @@ public class PracticeService {
                 .distinct()
                 .limit(5)
                 .toList();
+        List<CommonDtos.ReviewQuestionDTO> wrongQuestions = sessionQuestions.stream()
+                .filter(question -> Boolean.FALSE.equals(question.getIsCorrect()))
+                .map(sessionQuestion -> toReviewQuestion(sessionQuestion, questionMap.get(sessionQuestion.getQuestionId())))
+                .filter(Objects::nonNull)
+                .toList();
         Map<String, CommonDtos.SubjectStatDTO> subjectStats = new LinkedHashMap<>();
         for (PracticeSessionQuestionEntity sessionQuestion : sessionQuestions) {
-            QuestionEntity question = questions.stream()
-                    .filter(item -> item.getId().equals(sessionQuestion.getQuestionId()))
-                    .findFirst()
-                    .orElse(null);
+            QuestionEntity question = questionMap.get(sessionQuestion.getQuestionId());
             if (question == null) {
                 continue;
             }
@@ -254,6 +258,7 @@ public class PracticeService {
                 answeredCount,
                 wrongCount,
                 wrongQuestionIds,
+                wrongQuestions,
                 weakPoints,
                 new ArrayList<>(subjectStats.values())
         );
@@ -358,6 +363,43 @@ public class PracticeService {
 
     private boolean isAnswered(PracticeSessionQuestionEntity sessionQuestion) {
         return "correct".equals(sessionQuestion.getQuestionStatus()) || "wrong".equals(sessionQuestion.getQuestionStatus());
+    }
+
+    private CommonDtos.ReviewQuestionDTO toReviewQuestion(PracticeSessionQuestionEntity sessionQuestion, QuestionEntity question) {
+        if (question == null) {
+            return null;
+        }
+        List<String> userAnswer = Support.parseStringList(sessionQuestion.getAnswerJson());
+        List<Boolean> stepStatus = Support.parseBooleanList(sessionQuestion.getStepStatusJson());
+        List<String> correctAnswer = Support.parseStringList(sessionQuestion.getCorrectAnswerJson());
+        if (correctAnswer.isEmpty()) {
+            correctAnswer = Support.parseStringList(question.getAnswerJson());
+        }
+        String analysis = Support.safe(sessionQuestion.getAnalysis()).isBlank()
+                ? Support.safe(question.getAnalysis())
+                : Support.safe(sessionQuestion.getAnalysis());
+        String stemImageUrl = Support.safe(sessionQuestion.getStemImageUrl()).isBlank()
+                ? Support.safe(question.getStemImageUrl())
+                : Support.safe(sessionQuestion.getStemImageUrl());
+        return new CommonDtos.ReviewQuestionDTO(
+                question.getId(),
+                sessionQuestion.getOrderNo(),
+                question.getSubjectCode(),
+                question.getSubjectName(),
+                question.getQuestionType(),
+                question.getTitle(),
+                question.getStem(),
+                stemImageUrl,
+                Support.parseOptions(question.getOptionsJson()),
+                Support.parseStringList(question.getStepsJson()),
+                Support.parseStringList(question.getTagsJson()),
+                sessionQuestion.getNewType() != null ? sessionQuestion.getNewType() : question.getNewType(),
+                userAnswer,
+                stepStatus,
+                correctAnswer,
+                sessionQuestion.getIsCorrect(),
+                analysis
+        );
     }
 
     private void refreshSessionProgress(PracticeSessionEntity session) {

@@ -44,6 +44,9 @@ public class UserQuestionStateEntity extends BaseEntity {
     @Column(name = "wrong_count", nullable = false)
     private Integer wrongCount;
 
+    @Column(name = "wrong_book_resolve_streak", nullable = false)
+    private Integer wrongBookResolveStreak;
+
     @Column(name = "essay_done", nullable = false)
     private Boolean essayDone;
 
@@ -141,6 +144,14 @@ public class UserQuestionStateEntity extends BaseEntity {
 
     public void setWrongCount(Integer wrongCount) {
         this.wrongCount = wrongCount;
+    }
+
+    public Integer getWrongBookResolveStreak() {
+        return wrongBookResolveStreak;
+    }
+
+    public void setWrongBookResolveStreak(Integer wrongBookResolveStreak) {
+        this.wrongBookResolveStreak = wrongBookResolveStreak;
     }
 
     public Boolean getEssayDone() {

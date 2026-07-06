@@ -27,7 +27,12 @@ public class UserController {
     @PatchMapping("/me")
     public ApiResponse<AuthDtos.UserDTO> updateMe(@Valid @RequestBody AuthDtos.UpdateUserRequest request) {
         AuthDtos.UpdateUserRequest.Payload payload = request.getData();
-        return ApiResponse.ok(userService.updateMe(payload.getNickname(), payload.getAvatarUrl()));
+        return ApiResponse.ok(userService.updateMe(
+                payload.getNickname(),
+                payload.getAvatarUrl(),
+                payload.getWrongBookAutoRemoveEnabled(),
+                payload.getWrongBookAutoRemoveThreshold()
+        ));
     }
 
     @GetMapping("/me/study-summary")

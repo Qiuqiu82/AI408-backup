@@ -45,13 +45,28 @@ public class UserService {
         return Support.toUserDto(currentUserEntity());
     }
 
-    public AuthDtos.UserDTO updateMe(String nickname, String avatarUrl) {
+    public AuthDtos.UserDTO updateMe(String nickname, String avatarUrl, Boolean wrongBookAutoRemoveEnabled, Integer wrongBookAutoRemoveThreshold) {
         UserEntity user = currentUserEntity();
         if (nickname != null) {
             user.setNickname(nickname.trim());
         }
         if (avatarUrl != null) {
             user.setAvatarUrl(avatarUrl.trim());
+        }
+        if (wrongBookAutoRemoveEnabled != null) {
+            user.setWrongBookAutoRemoveEnabled(wrongBookAutoRemoveEnabled);
+        }
+        if (wrongBookAutoRemoveThreshold != null) {
+            if (wrongBookAutoRemoveThreshold != 1 && wrongBookAutoRemoveThreshold != 3) {
+                throw new BusinessException(ErrorCode.STATE_INVALID);
+            }
+            user.setWrongBookAutoRemoveThreshold(wrongBookAutoRemoveThreshold);
+        }
+        if (user.getWrongBookAutoRemoveThreshold() == null) {
+            user.setWrongBookAutoRemoveThreshold(1);
+        }
+        if (user.getWrongBookAutoRemoveEnabled() == null) {
+            user.setWrongBookAutoRemoveEnabled(false);
         }
         return Support.toUserDto(userRepository.save(user));
     }
