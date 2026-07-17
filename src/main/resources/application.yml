@@ -55,8 +55,20 @@ ai408:
     vision-model: ${AI408_QWEN_VISION_MODEL:qwen-vl-max-latest}
     system-prompt: "你是 AI408 刷题系统里的 AI 讲解老师。请使用中文、结构清晰、简洁直接的方式讲解题目，优先输出解题思路、正确答案、易错点和知识点总结。可以参考题库解析，但不要直接照抄原文。"
     mock-enabled: ${AI408_AI_MOCK:false}
+  mail:
+    host: ${AI408_MAIL_HOST:}
+    port: ${AI408_MAIL_PORT:465}
+    username: ${AI408_MAIL_USERNAME:}
+    password: ${AI408_MAIL_PASSWORD:}
+    from: ${AI408_MAIL_FROM:}
+    ssl: ${AI408_MAIL_SSL:true}
+    mock-enabled: ${AI408_MAIL_MOCK:true}
+  invite:
+    only: ${AI408_INVITE_ONLY:false}
+    allowed-emails: ${AI408_ALLOWED_EMAILS:}
   admin:
     seed-mobile: ${AI408_ADMIN_MOBILE:13800138000}
+    seed-email: ${AI408_ADMIN_EMAIL:}
     seed-nickname: ${AI408_ADMIN_NICKNAME:AI408管理员}
   cors:
     allowed-origins:

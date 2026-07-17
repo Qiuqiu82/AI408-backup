@@ -20,13 +20,22 @@ public class AuthController {
 
     @PostMapping("/send-code")
     public ApiResponse<AuthDtos.SendCodeResponse> sendCode(@Valid @RequestBody AuthDtos.SendCodeRequest request) {
-        return ApiResponse.ok(authService.sendCode(request.getData().getMobile()));
+        AuthDtos.SendCodeRequest.Payload payload = request.getData();
+        return ApiResponse.ok(authService.sendCode(
+                payload.getEmail() == null ? payload.getMobile() : payload.getEmail(),
+                payload.getScene()
+        ));
     }
 
     @PostMapping("/login")
     public ApiResponse<AuthDtos.AuthTokens> login(@Valid @RequestBody AuthDtos.LoginRequest request) {
         AuthDtos.LoginRequest.Payload payload = request.getData();
-        return ApiResponse.ok(authService.login(payload.getMobile(), payload.getCode(), payload.getDeviceId(), payload.getClientType()));
+        return ApiResponse.ok(authService.login(
+                payload.getEmail() == null ? payload.getMobile() : payload.getEmail(),
+                payload.getCode(),
+                payload.getDeviceId(),
+                payload.getClientType()
+        ));
     }
 
     @PostMapping("/refresh")

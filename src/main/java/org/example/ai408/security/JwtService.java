@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -34,14 +35,15 @@ public class JwtService {
 
     private String buildToken(UserEntity user, JwtType type, long amount, ChronoUnit unit) {
         Instant now = Instant.now();
+        Map<String, Object> claims = new LinkedHashMap<>();
+        claims.put("typ", type.name());
+        claims.put("mobile", user.getMobile());
+        claims.put("email", user.getEmail());
+        claims.put("nickname", user.getNickname());
+        claims.put("role", user.getRole());
         return Jwts.builder()
                 .subject(user.getId())
-                .claims(Map.of(
-                        "typ", type.name(),
-                        "mobile", user.getMobile(),
-                        "nickname", user.getNickname(),
-                        "role", user.getRole()
-                ))
+                .claims(claims)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(amount, unit)))
                 .signWith(key)

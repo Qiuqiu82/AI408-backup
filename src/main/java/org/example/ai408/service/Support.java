@@ -21,6 +21,7 @@ public final class Support {
         return new AuthDtos.UserDTO(
                 user.getId(),
                 user.getMobile(),
+                user.getEmail(),
                 user.getNickname(),
                 user.getAvatarUrl() == null ? "" : user.getAvatarUrl(),
                 user.getRole(),
@@ -107,7 +108,20 @@ public final class Support {
         if (json == null || json.isBlank()) {
             return Collections.emptyList();
         }
-        return JsonUtils.readStringList(json);
+        try {
+            return JsonUtils.readStringList(json);
+        } catch (IllegalArgumentException exception) {
+            String normalized = json.trim();
+            if (normalized.startsWith("[") && normalized.endsWith("]")) {
+                normalized = normalized.substring(1, normalized.length() - 1);
+            }
+            return java.util.Arrays.stream(normalized.split("[,，/；;、]"))
+                    .map(String::trim)
+                    .map(value -> value.replaceAll("^['\"]|['\"]$", ""))
+                    .filter(value -> !value.isBlank())
+                    .distinct()
+                    .toList();
+        }
     }
 
     public static List<Boolean> parseBooleanList(String json) {

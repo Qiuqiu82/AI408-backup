@@ -2,9 +2,9 @@ package org.example.ai408.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public final class AuthDtos {
@@ -26,12 +26,23 @@ public final class AuthDtos {
         }
 
         public static class Payload {
-            @NotBlank
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式错误")
+            @Email
+            @Size(max = 120)
+            private String email;
+
+            @Size(max = 20)
             private String mobile;
 
             @Size(max = 20)
             private String scene = "login";
+
+            public String getEmail() {
+                return email;
+            }
+
+            public void setEmail(String email) {
+                this.email = email;
+            }
 
             public String getMobile() {
                 return mobile;
@@ -66,11 +77,15 @@ public final class AuthDtos {
         }
 
         public static class Payload {
-            @NotBlank
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式错误")
+            @Email
+            @Size(max = 120)
+            private String email;
+
+            @Size(max = 20)
             private String mobile;
 
             @NotBlank
+            @Size(max = 12)
             private String code;
 
             @Size(max = 100)
@@ -78,6 +93,14 @@ public final class AuthDtos {
 
             @Size(max = 20)
             private String clientType = "web";
+
+            public String getEmail() {
+                return email;
+            }
+
+            public void setEmail(String email) {
+                this.email = email;
+            }
 
             public String getMobile() {
                 return mobile;
@@ -150,6 +173,7 @@ public final class AuthDtos {
     public record UserDTO(
             String id,
             String mobile,
+            String email,
             String nickname,
             String avatarUrl,
             String role,

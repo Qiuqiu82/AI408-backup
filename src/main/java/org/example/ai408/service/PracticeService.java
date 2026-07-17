@@ -436,6 +436,7 @@ public class PracticeService {
                     entity.setInWrongBook(false);
                     entity.setCorrectCount(0);
                     entity.setWrongCount(0);
+                    entity.setWrongBookResolveStreak(0);
                     entity.setEssayDone(false);
                     entity.setSelectedJson("[]");
                     entity.setStepStatusJson("[]");

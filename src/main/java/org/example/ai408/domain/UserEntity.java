@@ -14,8 +14,11 @@ public class UserEntity extends BaseEntity {
     @Column(length = 64)
     private String id;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(unique = true, length = 20)
     private String mobile;
+
+    @Column(unique = true, length = 120)
+    private String email;
 
     @Column(nullable = false, length = 50)
     private String nickname;
@@ -55,6 +58,14 @@ public class UserEntity extends BaseEntity {
 
     public void setMobile(String mobile) {
         this.mobile = mobile;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getNickname() {

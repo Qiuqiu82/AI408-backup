@@ -10,6 +10,8 @@ public record AppProperties(
         Auth auth,
         Jwt jwt,
         Ai ai,
+        Mail mail,
+        Invite invite,
         Cos cos,
         Admin admin,
         Cors cors
@@ -21,6 +23,10 @@ public record AppProperties(
     public record Jwt(String secret, long accessTokenMinutes, long refreshTokenDays) {}
 
     public record Ai(String baseUrl, String apiKey, String model, String visionModel, String systemPrompt, boolean mockEnabled) {}
+
+    public record Mail(String host, int port, String username, String password, String from, boolean ssl, boolean mockEnabled) {}
+
+    public record Invite(boolean only, List<String> allowedEmails) {}
 
     public record Cos(
             boolean enable,
@@ -34,7 +40,7 @@ public record AppProperties(
             boolean publicRead
     ) {}
 
-    public record Admin(String seedMobile, String seedNickname) {}
+    public record Admin(String seedMobile, String seedEmail, String seedNickname) {}
 
     public record Cors(List<String> allowedOrigins) {}
 }

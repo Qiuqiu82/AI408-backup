@@ -51,16 +51,28 @@ public class DataInitializer {
     }
 
     private void seedAdminUser() {
-        UserEntity user = userRepository.findByMobile(appProperties.admin().seedMobile())
+        String seedEmail = appProperties.admin().seedEmail() == null ? "" : appProperties.admin().seedEmail().trim().toLowerCase();
+        UserEntity user = (!seedEmail.isBlank()
+                ? userRepository.findByEmail(seedEmail)
+                : userRepository.findByMobile(appProperties.admin().seedMobile()))
                 .orElseGet(() -> {
                     UserEntity entity = new UserEntity();
                     entity.setId(IdGenerator.prefixed("u"));
-                    entity.setMobile(appProperties.admin().seedMobile());
+                    entity.setMobile(seedEmail.isBlank() ? appProperties.admin().seedMobile() : null);
+                    entity.setEmail(seedEmail.isBlank() ? null : seedEmail);
                     return entity;
                 });
+        if (!seedEmail.isBlank()) {
+            user.setEmail(seedEmail);
+        }
+        if (user.getMobile() == null && seedEmail.isBlank()) {
+            user.setMobile(appProperties.admin().seedMobile());
+        }
         user.setNickname(appProperties.admin().seedNickname());
         user.setAvatarUrl(user.getAvatarUrl() == null ? "" : user.getAvatarUrl());
         user.setRole("admin");
+        user.setWrongBookAutoRemoveEnabled(Boolean.TRUE.equals(user.getWrongBookAutoRemoveEnabled()));
+        user.setWrongBookAutoRemoveThreshold(user.getWrongBookAutoRemoveThreshold() == null ? 1 : user.getWrongBookAutoRemoveThreshold());
         user.setLastLoginAt(user.getLastLoginAt() == null ? LocalDateTime.now() : user.getLastLoginAt());
         userRepository.save(user);
     }
