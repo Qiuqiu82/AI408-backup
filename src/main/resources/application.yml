@@ -76,6 +76,7 @@ ai408:
     only: ${AI408_INVITE_ONLY:false}
     allowed-emails: ${AI408_ALLOWED_EMAILS:}
   admin:
+    seed-enabled: ${AI408_ADMIN_SEED_ENABLED:false}
     seed-mobile: ${AI408_ADMIN_MOBILE:13800138000}
     seed-email: ${AI408_ADMIN_EMAIL:}
     seed-nickname: ${AI408_ADMIN_NICKNAME:AI408管理员}

@@ -40,7 +40,7 @@ public record AppProperties(
             boolean publicRead
     ) {}
 
-    public record Admin(String seedMobile, String seedEmail, String seedNickname) {}
+    public record Admin(boolean seedEnabled, String seedMobile, String seedEmail, String seedNickname) {}
 
     public record Cors(List<String> allowedOrigins) {}
 }
