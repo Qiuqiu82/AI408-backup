@@ -46,29 +46,33 @@ public class AuthService {
     private final LoginCodeRepository loginCodeRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthRateLimitService authRateLimitService;
 
     public AuthService(
             AppProperties appProperties,
             UserRepository userRepository,
             LoginCodeRepository loginCodeRepository,
             JwtService jwtService,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            AuthRateLimitService authRateLimitService
     ) {
         this.appProperties = appProperties;
         this.userRepository = userRepository;
         this.loginCodeRepository = loginCodeRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.authRateLimitService = authRateLimitService;
     }
 
     @Transactional
-    public AuthDtos.SendCodeResponse sendCode(String emailOrMobile, String scene) {
+    public AuthDtos.SendCodeResponse sendCode(String emailOrMobile, String scene, String requestIp) {
         String normalizedScene = normalizeScene(scene);
         String email = normalizeEmail(emailOrMobile);
         requireEmail(email);
         requireInvited(email);
 
         LocalDateTime now = LocalDateTime.now();
+        authRateLimitService.checkSendCodeLimit(email, normalizedScene, requestIp, now);
         loginCodeRepository.findTopByEmailAndSceneAndUsedFalseOrderByCreatedAtDesc(email, normalizedScene)
                 .ifPresent(existing -> {
                     if (existing.getLastSentAt() != null
@@ -87,6 +91,7 @@ public class AuthService {
         entity.setLastSentAt(now);
         entity.setAttemptCount(0);
         entity.setUsed(false);
+        entity.setRequestIp(authRateLimitService.normalizeIp(requestIp));
         loginCodeRepository.save(entity);
 
         sendLoginCodeEmail(email, code);
@@ -134,18 +139,22 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthDtos.AuthTokens passwordLogin(String emailValue, String password, String deviceId, String clientType) {
+    public AuthDtos.AuthTokens passwordLogin(String emailValue, String password, String deviceId, String clientType, String requestIp) {
         String email = normalizeEmail(emailValue);
         requireEmail(email);
         requireInvited(email);
+        LocalDateTime now = LocalDateTime.now();
+        authRateLimitService.checkPasswordLoginLimit(email, requestIp, now);
 
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED, "邮箱或密码错误"));
-        if (isBlank(user.getPasswordHash()) || password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+                .orElse(null);
+        if (user == null || isBlank(user.getPasswordHash()) || password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            authRateLimitService.recordPasswordLoginFailure(email, requestIp, now);
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "邮箱或密码错误");
         }
 
-        user.setLastLoginAt(LocalDateTime.now());
+        authRateLimitService.clearPasswordLoginFailures(email, requestIp);
+        user.setLastLoginAt(now);
         return issueAndPersistTokens(userRepository.save(user), "password");
     }
 

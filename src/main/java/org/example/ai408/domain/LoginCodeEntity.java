@@ -44,6 +44,9 @@ public class LoginCodeEntity extends BaseEntity {
     @Column(name = "client_type", length = 20)
     private String clientType;
 
+    @Column(name = "request_ip", length = 64)
+    private String requestIp;
+
     public String getId() {
         return id;
     }
@@ -130,5 +133,13 @@ public class LoginCodeEntity extends BaseEntity {
 
     public void setClientType(String clientType) {
         this.clientType = clientType;
+    }
+
+    public String getRequestIp() {
+        return requestIp;
+    }
+
+    public void setRequestIp(String requestIp) {
+        this.requestIp = requestIp;
     }
 }

@@ -18,7 +18,15 @@ public record AppProperties(
 ) {
     public record Files(String storageDir, String templateDir) {}
 
-    public record Auth(String fixedCode, int codeExpireSeconds) {}
+    public record Auth(
+            String fixedCode,
+            int codeExpireSeconds,
+            int sendIpHourlyLimit,
+            int sendEmailDailyLimit,
+            int passwordFailureWindowMinutes,
+            int passwordFailureLimit,
+            int passwordLockMinutes
+    ) {}
 
     public record Jwt(String secret, long accessTokenMinutes, long refreshTokenDays) {}
 

@@ -1,12 +1,14 @@
 package org.example.ai408.controller;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.ai408.common.ApiResponse;
 import org.example.ai408.dto.AuthDtos;
 import org.example.ai408.service.AuthService;
+import org.example.ai408.util.ClientIpUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,11 +27,15 @@ public class AuthController {
 
     @PostMapping("/send-code")
     @Operation(summary = "发送邮箱验证码", description = "向邮箱发送登录验证码。邀请制开启时，仅允许白名单邮箱调用。")
-    public ApiResponse<AuthDtos.SendCodeResponse> sendCode(@Valid @RequestBody AuthDtos.SendCodeRequest request) {
+    public ApiResponse<AuthDtos.SendCodeResponse> sendCode(
+            @Valid @RequestBody AuthDtos.SendCodeRequest request,
+            HttpServletRequest httpRequest
+    ) {
         AuthDtos.SendCodeRequest.Payload payload = request.getData();
         return ApiResponse.ok(authService.sendCode(
                 payload.getEmail() == null ? payload.getMobile() : payload.getEmail(),
-                payload.getScene()
+                payload.getScene(),
+                ClientIpUtils.resolve(httpRequest)
         ));
     }
 
@@ -47,13 +53,17 @@ public class AuthController {
 
     @PostMapping("/password-login")
     @Operation(summary = "邮箱密码登录", description = "使用已设置密码的邮箱登录。账号不存在、未设置密码或密码错误统一返回 LOGIN_FAILED。")
-    public ApiResponse<AuthDtos.AuthTokens> passwordLogin(@Valid @RequestBody AuthDtos.PasswordLoginRequest request) {
+    public ApiResponse<AuthDtos.AuthTokens> passwordLogin(
+            @Valid @RequestBody AuthDtos.PasswordLoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
         AuthDtos.PasswordLoginRequest.Payload payload = request.getData();
         return ApiResponse.ok(authService.passwordLogin(
                 payload.getEmail(),
                 payload.getPassword(),
                 payload.getDeviceId(),
-                payload.getClientType()
+                payload.getClientType(),
+                ClientIpUtils.resolve(httpRequest)
         ));
     }
 

@@ -53,6 +53,11 @@ ai408:
   auth:
     fixed-code: ${AI408_FIXED_CODE:123456}
     code-expire-seconds: 300
+    send-ip-hourly-limit: ${AI408_SEND_CODE_IP_HOURLY_LIMIT:30}
+    send-email-daily-limit: ${AI408_SEND_CODE_EMAIL_DAILY_LIMIT:10}
+    password-failure-window-minutes: ${AI408_PASSWORD_FAILURE_WINDOW_MINUTES:10}
+    password-failure-limit: ${AI408_PASSWORD_FAILURE_LIMIT:5}
+    password-lock-minutes: ${AI408_PASSWORD_LOCK_MINUTES:15}
   jwt:
     secret: ${AI408_JWT_SECRET:ai408-local-secret-ai408-local-secret-ai408}
     access-token-minutes: 120
