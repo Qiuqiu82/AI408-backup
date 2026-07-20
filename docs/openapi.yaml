@@ -1,0 +1,1662 @@
+openapi: 3.0.1
+info:
+  title: AI408 API
+  description: AI408 408 考研刷题系统后端接口。认证接口不需要 Bearer Token，其余业务接口使用 JWT。
+  contact:
+    name: AI408 Team
+  version: v1
+servers:
+- url: http://127.0.0.1:8081
+  description: Generated server url
+security:
+- bearerAuth: []
+tags:
+- name: 用户
+  description: 当前用户资料、密码和学习摘要
+- name: 个人题目状态
+  description: 当前用户的错题本、收藏和题目状态
+- name: AI 讲解
+  description: 题目 AI 流式讲解
+- name: 认证
+  description: 邮箱验证码、邮箱密码登录和 Token 刷新
+- name: 练习
+  description: 练习会话、答题、步骤题、结束和复盘
+- name: 题库
+  description: 公共科目、题目分页和题目详情
+- name: 管理员题库
+  description: 管理员题库模板、异步导入任务和错误文件
+- name: 模拟考试
+  description: 试卷生成、交卷、考试记录和错题回顾
+paths:
+  /api/v1/questions/page:
+    post:
+      tags:
+      - 题库
+      summary: 分页查询题目
+      description: 支持科目、关键词、题型、标签、错题和收藏状态等筛选条件。
+      operationId: pageQuestions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionPageRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseQuestionSummaryDTO"
+  /api/v1/practice/sessions:
+    post:
+      tags:
+      - 练习
+      summary: 创建练习会话
+      description: 按科目、模式、题量或指定题目创建个人练习会话。
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PracticeSessionCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePracticeSessionDTO"
+  /api/v1/practice/sessions/{id}/finish:
+    post:
+      tags:
+      - 练习
+      summary: 结束练习
+      operationId: finish
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFinishPracticeDTO"
+  /api/v1/practice/sessions/{id}/answers:
+    post:
+      tags:
+      - 练习
+      summary: 提交练习答案
+      description: 提交单选或多选答案并返回判题结果、正确答案和解析。
+      operationId: submit
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseSubmitAnswerDTO"
+  /api/v1/me/wrong-book/page:
+    post:
+      tags:
+      - 个人题目状态
+      summary: 分页查询错题本
+      operationId: wrongBook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatePageRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseWrongBookRecordDTO"
+  /api/v1/me/favorites/page:
+    post:
+      tags:
+      - 个人题目状态
+      summary: 分页查询收藏题目
+      operationId: favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatePageRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseFavoriteRecordDTO"
+  /api/v1/exams/records:
+    get:
+      tags:
+      - 模拟考试
+      summary: 查询考试记录列表
+      operationId: listRecords
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListExamRecordSummaryDTO"
+    post:
+      tags:
+      - 模拟考试
+      summary: 提交模拟考试
+      operationId: submitRecord
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamSubmitRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExamRecordSummaryDTO"
+  /api/v1/exams/papers:
+    post:
+      tags:
+      - 模拟考试
+      summary: 生成模拟试卷
+      description: 生成当前用户的模拟试卷，默认 25 题，后端最多允许 50 题。
+      operationId: createPaper
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamPaperCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExamPaperDTO"
+  /api/v1/auth/send-code:
+    post:
+      tags:
+      - 认证
+      summary: 发送邮箱验证码
+      description: 向邮箱发送登录验证码。邀请制开启时，仅允许白名单邮箱调用。
+      operationId: sendCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendCodeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseSendCodeResponse"
+      security: []
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - 认证
+      summary: 刷新 Token
+      description: 使用 refreshToken 获取新的 accessToken 和 refreshToken。
+      operationId: refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthTokens"
+      security: []
+  /api/v1/auth/password-login:
+    post:
+      tags:
+      - 认证
+      summary: 邮箱密码登录
+      description: 使用已设置密码的邮箱登录。账号不存在、未设置密码或密码错误统一返回 LOGIN_FAILED。
+      operationId: passwordLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordLoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthTokens"
+      security: []
+  /api/v1/auth/login:
+    post:
+      tags:
+      - 认证
+      summary: 邮箱验证码登录
+      description: 使用邮箱和验证码登录；首次登录或未设置密码的用户需要随后设置密码。
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthTokens"
+      security: []
+  /api/v1/ai/explanations/stream:
+    post:
+      tags:
+      - AI 讲解
+      summary: 流式生成题目讲解
+      description: 通过 SSE 返回 delta、done、error 事件。
+      operationId: stream
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIExplainRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+  /api/v1/admin/questions/import:
+    post:
+      tags:
+      - 管理员题库
+      summary: 提交题库导入
+      description: 上传 Excel/CSV 文件，支持 append 追加和 replace 替换。
+      operationId: importQuestions
+      parameters:
+      - name: importType
+        in: query
+        required: false
+        schema:
+          type: string
+          default: append
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - file
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseImportJobDTO"
+  /api/v1/users/me:
+    get:
+      tags:
+      - 用户
+      summary: 获取当前用户
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseUserDTO"
+    patch:
+      tags:
+      - 用户
+      summary: 更新当前用户
+      description: 更新昵称、头像和错题自动移除设置。
+      operationId: updateMe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseUserDTO"
+  /api/v1/users/me/password:
+    patch:
+      tags:
+      - 用户
+      summary: 设置或修改密码
+      description: 首次设置无需旧密码；验证码登录会话可直接重置，密码登录会话修改已有密码时需要旧密码。
+      operationId: updatePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseUserDTO"
+  /api/v1/practice/sessions/{id}/essay-steps:
+    patch:
+      tags:
+      - 练习
+      summary: 更新步骤题完成状态
+      operationId: essaySteps
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EssayStepsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseEssayStepDTO"
+  /api/v1/me/question-states/{questionId}:
+    patch:
+      tags:
+      - 个人题目状态
+      summary: 更新题目状态
+      description: 更新收藏等级、个人笔记和错题本状态。
+      operationId: patchState
+      parameters:
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionStatePatchRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseStateUpdateResultDTO"
+  /api/v1/users/me/study-summary:
+    get:
+      tags:
+      - 用户
+      summary: 获取学习摘要
+      operationId: studySummary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseStudySummaryDTO"
+  /api/v1/subjects:
+    get:
+      tags:
+      - 题库
+      summary: 查询科目列表
+      operationId: subjects
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListSubjectDTO"
+  /api/v1/questions/{id}:
+    get:
+      tags:
+      - 题库
+      summary: 查询题目详情
+      description: 根据 view 和 sessionId 返回题目内容及当前用户状态。
+      operationId: getQuestion
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          default: practice
+      - name: sessionId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseQuestionDetailDTO"
+  /api/v1/practice/sessions/{id}:
+    get:
+      tags:
+      - 练习
+      summary: 获取练习会话
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePracticeSessionDTO"
+  /api/v1/practice/sessions/{id}/review:
+    get:
+      tags:
+      - 练习
+      summary: 获取练习复盘
+      operationId: review
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseReviewDTO"
+  /api/v1/me/wrong-book/stats:
+    get:
+      tags:
+      - 个人题目状态
+      summary: 查询错题统计
+      operationId: wrongBookStats
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseWrongBookStatsDTO"
+  /api/v1/exams/records/{id}:
+    get:
+      tags:
+      - 模拟考试
+      summary: 查询考试记录详情
+      operationId: getRecord
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExamRecordDetailDTO"
+  /api/v1/admin/questions/template:
+    get:
+      tags:
+      - 管理员题库
+      summary: 获取题库导入模板
+      operationId: template
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseTemplateDTO"
+  /api/v1/admin/questions/imports/{jobId}:
+    get:
+      tags:
+      - 管理员题库
+      summary: 查询题库导入任务
+      operationId: importJob
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseImportJobDTO"
+  /api/v1/me/wrong-book:
+    delete:
+      tags:
+      - 个人题目状态
+      summary: 清空错题本
+      operationId: clearWrongBook
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseClearResultDTO"
+  /api/v1/me/favorites:
+    delete:
+      tags:
+      - 个人题目状态
+      summary: 清空收藏
+      operationId: clearFavorites
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseClearResultDTO"
+components:
+  schemas:
+    PageDto:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageIndex:
+          type: integer
+          format: int32
+    Params:
+      type: object
+      properties:
+        subjectCode:
+          type: string
+        keyword:
+          type: string
+        questionType:
+          type: string
+        tag:
+          type: string
+        newType:
+          type: integer
+          format: int32
+        questionStatus:
+          type: string
+        inWrongBook:
+          type: integer
+          format: int32
+        inFavorites:
+          type: integer
+          format: int32
+    Payload:
+      required:
+      - page
+      type: object
+      properties:
+        page:
+          $ref: "#/components/schemas/PageDto"
+        params:
+          $ref: "#/components/schemas/Params"
+    QuestionPageRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponsePageResponseQuestionSummaryDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResponseQuestionSummaryDTO"
+    PageResponseQuestionSummaryDTO:
+      type: object
+      properties:
+        pageIndex:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+        recordCount:
+          type: integer
+          format: int64
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionSummaryDTO"
+    QuestionSummaryDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        subjectCode:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+        tag:
+          type: string
+        newType:
+          type: boolean
+        questionStatus:
+          type: string
+        favoriteImportance:
+          type: integer
+          format: int32
+        inWrongBook:
+          type: boolean
+    PracticeSessionCreateRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponsePracticeSessionDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PracticeSessionDTO"
+    PracticeCurrentQuestionDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+    PracticeSessionDTO:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        mode:
+          type: string
+        status:
+          type: string
+        subjectCode:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+        currentQuestionId:
+          type: string
+        answeredCount:
+          type: integer
+          format: int32
+        questionBriefList:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionQuestionBriefDTO"
+        currentQuestion:
+          $ref: "#/components/schemas/PracticeCurrentQuestionDTO"
+    SessionQuestionBriefDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        orderNo:
+          type: integer
+          format: int32
+        questionStatus:
+          type: string
+        newType:
+          type: boolean
+    ApiResponseFinishPracticeDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/FinishPracticeDTO"
+    FinishPracticeDTO:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        durationSeconds:
+          type: integer
+          format: int32
+        answeredCount:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+        accuracy:
+          type: integer
+          format: int32
+        reviewId:
+          type: string
+    SubmitAnswerRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseSubmitAnswerDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/SubmitAnswerDTO"
+    SubmitAnswerDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        isCorrect:
+          type: boolean
+        questionStatus:
+          type: string
+        correctAnswer:
+          type: array
+          items:
+            type: string
+        analysis:
+          type: string
+        inWrongBook:
+          type: boolean
+        nextQuestionId:
+          type: string
+    StatePageRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponsePageResponseWrongBookRecordDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResponseWrongBookRecordDTO"
+    PageResponseWrongBookRecordDTO:
+      type: object
+      properties:
+        pageIndex:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+        recordCount:
+          type: integer
+          format: int64
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/WrongBookRecordDTO"
+    WrongBookRecordDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        title:
+          type: string
+        subjectName:
+          type: string
+        tag:
+          type: string
+        wrongAt:
+          type: string
+    ApiResponsePageResponseFavoriteRecordDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResponseFavoriteRecordDTO"
+    FavoriteRecordDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        title:
+          type: string
+        subjectName:
+          type: string
+        favoriteImportance:
+          type: integer
+          format: int32
+        favoriteAt:
+          type: string
+    PageResponseFavoriteRecordDTO:
+      type: object
+      properties:
+        pageIndex:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+        recordCount:
+          type: integer
+          format: int64
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/FavoriteRecordDTO"
+    ExamSubmitRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseExamRecordSummaryDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ExamRecordSummaryDTO"
+    ExamRecordSummaryDTO:
+      type: object
+      properties:
+        recordId:
+          type: string
+        score:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int32
+        answeredCount:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        submittedAt:
+          type: string
+    ExamPaperCreateRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseExamPaperDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ExamPaperDTO"
+    ExamPaperDTO:
+      type: object
+      properties:
+        paperId:
+          type: string
+        durationSeconds:
+          type: integer
+          format: int32
+        generatedAt:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+        currentQuestionId:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamPaperQuestionDTO"
+    ExamPaperQuestionDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        orderNo:
+          type: integer
+          format: int32
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+        stem:
+          type: string
+        stemImageUrl:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionDTO"
+        steps:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        newType:
+          type: boolean
+        favoriteImportance:
+          type: integer
+          format: int32
+    OptionDTO:
+      type: object
+      properties:
+        key:
+          type: string
+        text:
+          type: string
+    SendCodeRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseSendCodeResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/SendCodeResponse"
+    SendCodeResponse:
+      type: object
+      properties:
+        expireSeconds:
+          type: integer
+          format: int32
+    RefreshRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseAuthTokens:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/AuthTokens"
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        user:
+          $ref: "#/components/schemas/UserDTO"
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+        hasPassword:
+          type: boolean
+        wrongBookAutoRemoveEnabled:
+          type: boolean
+        wrongBookAutoRemoveThreshold:
+          type: integer
+          format: int32
+    PasswordLoginRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    LoginRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    AIExplainRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
+    ApiResponseImportJobDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ImportJobDTO"
+    ImportJobDTO:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+        successCount:
+          type: integer
+          format: int32
+        failedCount:
+          type: integer
+          format: int32
+        errorFileUrl:
+          type: string
+        updatedAt:
+          type: string
+    UpdateUserRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseUserDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/UserDTO"
+    UpdatePasswordRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    EssayStepsRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseEssayStepDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/EssayStepDTO"
+    EssayStepDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        stepStatus:
+          type: array
+          items:
+            type: boolean
+        allDone:
+          type: boolean
+        questionStatus:
+          type: string
+    QuestionStatePatchRequest:
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Payload"
+    ApiResponseStateUpdateResultDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/StateUpdateResultDTO"
+    StateUpdateResultDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        favoriteImportance:
+          type: integer
+          format: int32
+        inWrongBook:
+          type: boolean
+        note:
+          type: string
+    ApiResponseStudySummaryDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/StudySummaryDTO"
+    StudySummaryDTO:
+      type: object
+      properties:
+        answeredCount:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+        favoriteCount:
+          type: integer
+          format: int32
+        todayWrongCount:
+          type: integer
+          format: int32
+        todayFavoriteCount:
+          type: integer
+          format: int32
+        progressRate:
+          type: integer
+          format: int32
+        sessionSeconds:
+          type: integer
+          format: int32
+    ApiResponseListSubjectDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectDTO"
+    SubjectDTO:
+      type: object
+      properties:
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        shortName:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+        doneCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+    ApiResponseQuestionDetailDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/QuestionDetailDTO"
+    QuestionDetailDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+        stem:
+          type: string
+        stemImageUrl:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionDTO"
+        answer:
+          type: array
+          items:
+            type: string
+        analysis:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        newType:
+          type: boolean
+        note:
+          type: string
+    ApiResponseReviewDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ReviewDTO"
+    ReviewDTO:
+      type: object
+      properties:
+        accuracy:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        answeredCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+        wrongQuestionIds:
+          type: array
+          items:
+            type: string
+        wrongQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewQuestionDTO"
+        weakPoints:
+          type: array
+          items:
+            type: string
+        subjectStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectStatDTO"
+    ReviewQuestionDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        orderNo:
+          type: integer
+          format: int32
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+        stem:
+          type: string
+        stemImageUrl:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionDTO"
+        steps:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        newType:
+          type: boolean
+        userAnswer:
+          type: array
+          items:
+            type: string
+        stepStatus:
+          type: array
+          items:
+            type: boolean
+        correctAnswer:
+          type: array
+          items:
+            type: string
+        isCorrect:
+          type: boolean
+        analysis:
+          type: string
+    SubjectStatDTO:
+      type: object
+      properties:
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        correctCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+    ApiResponseWrongBookStatsDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/WrongBookStatsDTO"
+    WrongBookStatsDTO:
+      type: object
+      properties:
+        totalWrongCount:
+          type: integer
+          format: int32
+        todayWrongCount:
+          type: integer
+          format: int32
+        answeredCount:
+          type: integer
+          format: int32
+        wrongRate:
+          type: integer
+          format: int32
+        wrongQuestionIds:
+          type: array
+          items:
+            type: string
+        todayWrongQuestionIds:
+          type: array
+          items:
+            type: string
+    ApiResponseListExamRecordSummaryDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamRecordSummaryDTO"
+    ApiResponseExamRecordDetailDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ExamRecordDetailDTO"
+    ExamQuestionReviewDTO:
+      type: object
+      properties:
+        questionId:
+          type: string
+        orderNo:
+          type: integer
+          format: int32
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        questionType:
+          type: string
+        title:
+          type: string
+        stem:
+          type: string
+        stemImageUrl:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionDTO"
+        steps:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        newType:
+          type: boolean
+        userAnswer:
+          type: array
+          items:
+            type: string
+        stepStatus:
+          type: array
+          items:
+            type: boolean
+        correctAnswer:
+          type: array
+          items:
+            type: string
+        isCorrect:
+          type: boolean
+        analysis:
+          type: string
+    ExamRecordDetailDTO:
+      type: object
+      properties:
+        recordId:
+          type: string
+        score:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int32
+        answeredCount:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        wrongCount:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        submittedAt:
+          type: string
+        wrongQuestionIds:
+          type: array
+          items:
+            type: string
+        wrongQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamQuestionReviewDTO"
+    ApiResponseTemplateDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/TemplateDTO"
+    TemplateDTO:
+      type: object
+      properties:
+        templateUrl:
+          type: string
+        version:
+          type: string
+    ApiResponseClearResultDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ClearResultDTO"
+    ClearResultDTO:
+      type: object
+      properties:
+        clearedCount:
+          type: integer
+          format: int32
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
