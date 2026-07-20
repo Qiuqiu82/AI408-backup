@@ -1,6 +1,15 @@
 server:
   port: 8080
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+
 spring:
   datasource:
     url: ${AI408_DB_URL:jdbc:mysql://127.0.0.1:3306/ai408?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true}

@@ -61,6 +61,10 @@ public class PracticeService {
         session.setUserId(userId);
         session.setMode(payload.getMode());
         session.setSubjectCode(payload.getSubjectCode());
+        String scopeType = resolveScopeType(payload);
+        session.setScopeType(scopeType);
+        session.setScopeKey(resolveScopeKey(scopeType, payload));
+        session.setScopeName(resolveScopeName(scopeType, session.getScopeKey(), payload));
         session.setStatus("progressing");
         session.setTotalCount(selectedQuestions.size());
         session.setAnsweredCount(0);
@@ -265,6 +269,7 @@ public class PracticeService {
     }
 
     private List<QuestionEntity> selectQuestions(String userId, CommonDtos.PracticeSessionCreateRequest.Payload payload) {
+        String scopeType = resolveScopeType(payload);
         List<QuestionEntity> all = questionRepository.findAll().stream()
                 .sorted(Comparator.comparing(QuestionEntity::getSortNo, Comparator.nullsLast(Integer::compareTo))
                         .thenComparing(QuestionEntity::getQuestionCode, Comparator.nullsLast(String::compareTo)))
@@ -286,6 +291,19 @@ public class PracticeService {
                     .map(state -> questionRepository.findById(state.getQuestionId()).orElse(null))
                     .filter(Objects::nonNull)
                     .toList();
+        } else if (PracticeScopeSupport.PAPER.equals(scopeType)) {
+            requireScopeKey(payload.getScopeKey());
+            selected = all.stream()
+                    .filter(question -> payload.getScopeKey().equals(PracticeScopeSupport.paperYear(question)))
+                    .toList();
+        } else if (PracticeScopeSupport.KNOWLEDGE_POINT.equals(scopeType)) {
+            requireScopeKey(payload.getScopeKey());
+            selected = all.stream()
+                    .filter(question -> PracticeScopeSupport.matchesKnowledgePoint(question, payload.getScopeKey()))
+                    .collect(Collectors.toList());
+            if (selected.size() > 1) {
+                java.util.Collections.shuffle(selected);
+            }
         } else {
             selected = all.stream()
                     .filter(question -> matchesSessionSubject(payload.getSubjectCode(), question))
@@ -295,10 +313,76 @@ public class PracticeService {
             }
         }
         int limit = payload.getLimit() == null || payload.getLimit() <= 0 ? 20 : payload.getLimit();
-        if (selected.size() > limit) {
+        if (!PracticeScopeSupport.PAPER.equals(scopeType) && selected.size() > limit) {
             selected = selected.subList(0, limit);
         }
         return selected;
+    }
+
+    private void requireScopeKey(String scopeKey) {
+        if (scopeKey == null || scopeKey.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    private String resolveScopeType(CommonDtos.PracticeSessionCreateRequest.Payload payload) {
+        String requestedType = PracticeScopeSupport.normalizeType(payload.getScopeType());
+        if (!requestedType.isBlank()) {
+            if (Set.of(
+                    PracticeScopeSupport.PAPER,
+                    PracticeScopeSupport.KNOWLEDGE_POINT,
+                    PracticeScopeSupport.SUBJECT,
+                    PracticeScopeSupport.CUSTOM
+            ).contains(requestedType)) {
+                return requestedType;
+            }
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
+        }
+        if (payload.getQuestionIds() != null && !payload.getQuestionIds().isEmpty()) {
+            return PracticeScopeSupport.CUSTOM;
+        }
+        if ("wrongBook".equals(payload.getMode()) || "favorites".equals(payload.getMode())) {
+            return PracticeScopeSupport.CUSTOM;
+        }
+        if (payload.getSubjectCode() != null && !payload.getSubjectCode().isBlank()) {
+            return PracticeScopeSupport.SUBJECT;
+        }
+        return PracticeScopeSupport.CUSTOM;
+    }
+
+    private String resolveScopeKey(String scopeType, CommonDtos.PracticeSessionCreateRequest.Payload payload) {
+        if (PracticeScopeSupport.PAPER.equals(scopeType) || PracticeScopeSupport.KNOWLEDGE_POINT.equals(scopeType)) {
+            requireScopeKey(payload.getScopeKey());
+            return payload.getScopeKey().trim();
+        }
+        if (PracticeScopeSupport.SUBJECT.equals(scopeType)) {
+            return Support.safe(payload.getSubjectCode());
+        }
+        return Support.safe(payload.getSource());
+    }
+
+    private String resolveScopeName(
+            String scopeType,
+            String scopeKey,
+            CommonDtos.PracticeSessionCreateRequest.Payload payload
+    ) {
+        if (PracticeScopeSupport.PAPER.equals(scopeType)) {
+            return scopeKey + "年408真题";
+        }
+        if (PracticeScopeSupport.KNOWLEDGE_POINT.equals(scopeType)) {
+            return scopeKey;
+        }
+        if (PracticeScopeSupport.SUBJECT.equals(scopeType)) {
+            SubjectCatalog.SubjectMeta subject = SubjectCatalog.get(payload.getSubjectCode());
+            return subject == null ? Support.safe(payload.getSubjectCode()) : subject.subjectName();
+        }
+        if ("wrongBook".equals(payload.getMode())) {
+            return "错题本";
+        }
+        if ("favorites".equals(payload.getMode())) {
+            return "收藏题目";
+        }
+        return "指定题目";
     }
 
     private boolean matchesSessionSubject(String subjectCode, QuestionEntity question) {
@@ -353,6 +437,9 @@ public class PracticeService {
                 session.getMode(),
                 session.getStatus(),
                 session.getSubjectCode(),
+                session.getScopeType(),
+                session.getScopeKey(),
+                session.getScopeName(),
                 session.getTotalCount() == null ? sessionQuestions.size() : session.getTotalCount(),
                 session.getCurrentQuestionId(),
                 session.getAnsweredCount() == null ? (int) sessionQuestions.stream().filter(this::isAnswered).count() : session.getAnsweredCount(),

@@ -26,17 +26,26 @@ public class JwtService {
     }
 
     public String issueAccessToken(UserEntity user) {
-        return buildToken(user, JwtType.ACCESS, appProperties.jwt().accessTokenMinutes(), ChronoUnit.MINUTES);
+        return issueAccessToken(user, "password");
+    }
+
+    public String issueAccessToken(UserEntity user, String authMethod) {
+        return buildToken(user, JwtType.ACCESS, appProperties.jwt().accessTokenMinutes(), ChronoUnit.MINUTES, authMethod);
     }
 
     public String issueRefreshToken(UserEntity user) {
-        return buildToken(user, JwtType.REFRESH, appProperties.jwt().refreshTokenDays(), ChronoUnit.DAYS);
+        return issueRefreshToken(user, "password");
     }
 
-    private String buildToken(UserEntity user, JwtType type, long amount, ChronoUnit unit) {
+    public String issueRefreshToken(UserEntity user, String authMethod) {
+        return buildToken(user, JwtType.REFRESH, appProperties.jwt().refreshTokenDays(), ChronoUnit.DAYS, authMethod);
+    }
+
+    private String buildToken(UserEntity user, JwtType type, long amount, ChronoUnit unit, String authMethod) {
         Instant now = Instant.now();
         Map<String, Object> claims = new LinkedHashMap<>();
         claims.put("typ", type.name());
+        claims.put("authMethod", authMethod == null || authMethod.isBlank() ? "password" : authMethod);
         claims.put("mobile", user.getMobile());
         claims.put("email", user.getEmail());
         claims.put("nickname", user.getNickname());

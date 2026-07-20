@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -44,17 +45,20 @@ public class AuthService {
     private final UserRepository userRepository;
     private final LoginCodeRepository loginCodeRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(
             AppProperties appProperties,
             UserRepository userRepository,
             LoginCodeRepository loginCodeRepository,
-            JwtService jwtService
+            JwtService jwtService,
+            PasswordEncoder passwordEncoder
     ) {
         this.appProperties = appProperties;
         this.userRepository = userRepository;
         this.loginCodeRepository = loginCodeRepository;
         this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -126,7 +130,23 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseGet(() -> createUser(email));
         user.setLastLoginAt(now);
-        return issueAndPersistTokens(userRepository.save(user));
+        return issueAndPersistTokens(userRepository.save(user), "code");
+    }
+
+    @Transactional
+    public AuthDtos.AuthTokens passwordLogin(String emailValue, String password, String deviceId, String clientType) {
+        String email = normalizeEmail(emailValue);
+        requireEmail(email);
+        requireInvited(email);
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED, "邮箱或密码错误"));
+        if (isBlank(user.getPasswordHash()) || password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.LOGIN_FAILED, "邮箱或密码错误");
+        }
+
+        user.setLastLoginAt(LocalDateTime.now());
+        return issueAndPersistTokens(userRepository.save(user), "password");
     }
 
     @Transactional
@@ -138,12 +158,13 @@ public class AuthService {
         UserEntity user = userRepository.findById(claims.getSubject())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         validateRefreshToken(user, refreshToken);
-        return issueAndPersistTokens(user);
+        return issueAndPersistTokens(user, claims.get("authMethod", String.class));
     }
 
-    private AuthDtos.AuthTokens issueAndPersistTokens(UserEntity user) {
-        String accessToken = jwtService.issueAccessToken(user);
-        String refreshToken = jwtService.issueRefreshToken(user);
+    private AuthDtos.AuthTokens issueAndPersistTokens(UserEntity user, String authMethod) {
+        String normalizedAuthMethod = isBlank(authMethod) ? "password" : authMethod;
+        String accessToken = jwtService.issueAccessToken(user, normalizedAuthMethod);
+        String refreshToken = jwtService.issueRefreshToken(user, normalizedAuthMethod);
         user.setRefreshTokenHash(CryptoUtils.sha256(refreshToken));
         user.setRefreshTokenExpiresAt(LocalDateTime.ofInstant(
                 Instant.now().plus(appProperties.jwt().refreshTokenDays(), ChronoUnit.DAYS),

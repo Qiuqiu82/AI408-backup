@@ -26,6 +26,7 @@ public final class Support {
                 user.getAvatarUrl() == null ? "" : user.getAvatarUrl(),
                 user.getRole(),
                 TimeUtils.format(user.getCreatedAt()),
+                user.getPasswordHash() != null && !user.getPasswordHash().isBlank(),
                 Boolean.TRUE.equals(user.getWrongBookAutoRemoveEnabled()),
                 user.getWrongBookAutoRemoveThreshold() == null ? 1 : user.getWrongBookAutoRemoveThreshold()
         );

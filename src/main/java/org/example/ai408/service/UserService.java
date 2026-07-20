@@ -16,6 +16,7 @@ import org.example.ai408.security.AuthenticatedUser;
 import org.example.ai408.security.SecurityUtils;
 import org.example.ai408.util.TimeUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -28,17 +29,20 @@ public class UserService {
     private final UserQuestionStateRepository stateRepository;
     private final PracticeSessionRepository sessionRepository;
     private final QuestionRepository questionRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(
             UserRepository userRepository,
             UserQuestionStateRepository stateRepository,
             PracticeSessionRepository sessionRepository,
-            QuestionRepository questionRepository
+            QuestionRepository questionRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.stateRepository = stateRepository;
         this.sessionRepository = sessionRepository;
         this.questionRepository = questionRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AuthDtos.UserDTO me() {
@@ -68,6 +72,27 @@ public class UserService {
         if (user.getWrongBookAutoRemoveEnabled() == null) {
             user.setWrongBookAutoRemoveEnabled(false);
         }
+        return Support.toUserDto(userRepository.save(user));
+    }
+
+    public AuthDtos.UserDTO updatePassword(String currentPassword, String newPassword) {
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 8 || newPassword.length() > 64) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "新密码长度必须为 8-64 位");
+        }
+
+        UserEntity user = currentUserEntity();
+        boolean hasPassword = user.getPasswordHash() != null && !user.getPasswordHash().isBlank();
+        AuthenticatedUser principal = SecurityUtils.currentUser();
+        boolean codeVerifiedSession = principal != null && "code".equals(principal.authMethod());
+
+        if (hasPassword && !codeVerifiedSession) {
+            if (currentPassword == null || currentPassword.isBlank()
+                    || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new BusinessException(ErrorCode.LOGIN_FAILED, "当前密码错误");
+            }
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         return Support.toUserDto(userRepository.save(user));
     }
 

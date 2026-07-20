@@ -136,6 +136,70 @@ public final class AuthDtos {
         }
     }
 
+    public static class PasswordLoginRequest {
+        @Valid
+        @NotNull
+        @JsonProperty("data")
+        private Payload data;
+
+        public Payload getData() {
+            return data;
+        }
+
+        public void setData(Payload data) {
+            this.data = data;
+        }
+
+        public static class Payload {
+            @Email
+            @NotBlank
+            @Size(max = 120)
+            private String email;
+
+            @NotBlank
+            @Size(max = 64)
+            private String password;
+
+            @Size(max = 100)
+            private String deviceId;
+
+            @Size(max = 20)
+            private String clientType = "web";
+
+            public String getEmail() {
+                return email;
+            }
+
+            public void setEmail(String email) {
+                this.email = email;
+            }
+
+            public String getPassword() {
+                return password;
+            }
+
+            public void setPassword(String password) {
+                this.password = password;
+            }
+
+            public String getDeviceId() {
+                return deviceId;
+            }
+
+            public void setDeviceId(String deviceId) {
+                this.deviceId = deviceId;
+            }
+
+            public String getClientType() {
+                return clientType;
+            }
+
+            public void setClientType(String clientType) {
+                this.clientType = clientType;
+            }
+        }
+    }
+
     public static class RefreshRequest {
         @Valid
         @NotNull
@@ -178,6 +242,7 @@ public final class AuthDtos {
             String avatarUrl,
             String role,
             String createdAt,
+            Boolean hasPassword,
             Boolean wrongBookAutoRemoveEnabled,
             Integer wrongBookAutoRemoveThreshold
     ) {
@@ -238,6 +303,46 @@ public final class AuthDtos {
 
             public void setWrongBookAutoRemoveThreshold(Integer wrongBookAutoRemoveThreshold) {
                 this.wrongBookAutoRemoveThreshold = wrongBookAutoRemoveThreshold;
+            }
+        }
+    }
+
+    public static class UpdatePasswordRequest {
+        @Valid
+        @NotNull
+        @JsonProperty("data")
+        private Payload data;
+
+        public Payload getData() {
+            return data;
+        }
+
+        public void setData(Payload data) {
+            this.data = data;
+        }
+
+        public static class Payload {
+            @Size(max = 64)
+            private String currentPassword;
+
+            @NotBlank
+            @Size(min = 8, max = 64)
+            private String newPassword;
+
+            public String getCurrentPassword() {
+                return currentPassword;
+            }
+
+            public void setCurrentPassword(String currentPassword) {
+                this.currentPassword = currentPassword;
+            }
+
+            public String getNewPassword() {
+                return newPassword;
+            }
+
+            public void setNewPassword(String newPassword) {
+                this.newPassword = newPassword;
             }
         }
     }

@@ -27,6 +27,16 @@ public final class CommonDtos {
     public record SubjectDTO(String subjectCode, String subjectName, String shortName, int totalCount, int doneCount, int wrongCount) {
     }
 
+    public record PracticeScopeDTO(
+            String scopeType,
+            String scopeKey,
+            String scopeName,
+            int totalCount,
+            int doneCount,
+            int wrongCount
+    ) {
+    }
+
     public record StudySummaryDTO(int answeredCount, int correctCount, int wrongCount, int favoriteCount, int todayWrongCount, int todayFavoriteCount, int progressRate, int sessionSeconds) {
     }
 
@@ -78,6 +88,9 @@ public final class CommonDtos {
             String mode,
             String status,
             String subjectCode,
+            String scopeType,
+            String scopeKey,
+            String scopeName,
             int totalCount,
             String currentQuestionId,
             int answeredCount,
@@ -404,6 +417,8 @@ public final class CommonDtos {
             private Integer limit;
             private List<String> questionIds;
             private String source;
+            private String scopeType;
+            private String scopeKey;
 
             public String getMode() {
                 return mode;
@@ -443,6 +458,22 @@ public final class CommonDtos {
 
             public void setSource(String source) {
                 this.source = source;
+            }
+
+            public String getScopeType() {
+                return scopeType;
+            }
+
+            public void setScopeType(String scopeType) {
+                this.scopeType = scopeType;
+            }
+
+            public String getScopeKey() {
+                return scopeKey;
+            }
+
+            public void setScopeKey(String scopeKey) {
+                this.scopeKey = scopeKey;
             }
         }
     }

@@ -20,6 +20,9 @@ public class UserEntity extends BaseEntity {
     @Column(unique = true, length = 120)
     private String email;
 
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash;
+
     @Column(nullable = false, length = 50)
     private String nickname;
 
@@ -66,6 +69,14 @@ public class UserEntity extends BaseEntity {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getNickname() {

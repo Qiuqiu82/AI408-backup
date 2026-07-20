@@ -23,6 +23,15 @@ public class PracticeSessionEntity extends BaseEntity {
     @Column(name = "subject_code", length = 20)
     private String subjectCode;
 
+    @Column(name = "scope_type", length = 32)
+    private String scopeType;
+
+    @Column(name = "scope_key", length = 100)
+    private String scopeKey;
+
+    @Column(name = "scope_name", length = 255)
+    private String scopeName;
+
     @Column(nullable = false, length = 20)
     private String status;
 
@@ -87,6 +96,30 @@ public class PracticeSessionEntity extends BaseEntity {
 
     public void setSubjectCode(String subjectCode) {
         this.subjectCode = subjectCode;
+    }
+
+    public String getScopeType() {
+        return scopeType;
+    }
+
+    public void setScopeType(String scopeType) {
+        this.scopeType = scopeType;
+    }
+
+    public String getScopeKey() {
+        return scopeKey;
+    }
+
+    public void setScopeKey(String scopeKey) {
+        this.scopeKey = scopeKey;
+    }
+
+    public String getScopeName() {
+        return scopeName;
+    }
+
+    public void setScopeName(String scopeName) {
+        this.scopeName = scopeName;
     }
 
     public String getStatus() {
